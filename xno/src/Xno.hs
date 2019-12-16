@@ -152,6 +152,7 @@ minimumTree :: Rose GameEnd -> GameEnd
 minimumTree (Node x []) = x
 minimumTree (Node _ xs) = minimumEnd $ map maximumTree xs
 
+-- Implement these manually to be as lazy as possible
 minimumEnd :: [GameEnd] -> GameEnd
 minimumEnd [] = Win
 minimumEnd (Loss:_) = Loss
