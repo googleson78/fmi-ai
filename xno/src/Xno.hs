@@ -203,8 +203,4 @@ data GameState = GameState
   deriving (Show, Eq, Ord)
 
 play :: Spot -> GameState -> (GameEnd, GameState)
-play me startState = extremiseOn fst $ fmap (evalOnce me &&& id) $ allGames startState
-  where
-    extremiseOn = case me of
-      X -> maximiseOn
-      O -> minimiseOn
+play me startState = maximiseOn fst $ fmap (evalOnce me &&& id) $ allGames startState
