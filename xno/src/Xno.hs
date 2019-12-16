@@ -15,6 +15,7 @@
 
 module Xno where
 
+import Control.Arrow ((&&&))
 import Data.Traversable (for)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector.Mutable as Mut (write, modify)
@@ -24,7 +25,7 @@ import Control.Monad (join)
 import Data.Maybe (mapMaybe, listToMaybe)
 
 data Spot = X | O
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 opp :: Spot -> Spot
 opp = \case
@@ -33,7 +34,7 @@ opp = \case
 
 newtype Board a = Board {getBoard :: Vector (Vector (Maybe a))}
   deriving (Functor) via (Vector `Compose` Vector `Compose` Maybe)
-  deriving newtype (Eq, Show)
+  deriving newtype (Eq, Show, Ord)
 
 data Status a
   = InProgress
@@ -140,24 +141,30 @@ flipGameEnd = \case
   Drawn -> Drawn
   Win -> Loss
 
-maximise :: Rose GameEnd -> GameEnd
-maximise (Node x []) = x
-maximise (Node _ xs) = maximumEnd $ map minimise xs
+maximiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
+maximiseOn _ (Node x []) = x
+maximiseOn f (Node _ xs) = maximumEnd f $ map (minimiseOn f) xs
 
-minimise :: Rose GameEnd -> GameEnd
-minimise (Node x []) = x
-minimise (Node _ xs) = minimumEnd $ map maximise xs
+minimiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
+minimiseOn _ (Node x []) = x
+minimiseOn f (Node _ xs) = minimumEnd f $ map (maximiseOn f) xs
 
 -- Implement these manually to be as lazy as possible
-minimumEnd :: [GameEnd] -> GameEnd
-minimumEnd [] = Win
-minimumEnd (Loss:_) = Loss
-minimumEnd (x:xs) = min x $ minimumEnd xs
+minimumEnd :: Ord a => (a -> GameEnd) -> [a] -> a
+minimumEnd f = snd . go . map (f &&& id)
+  where
+    go [] = error "shouldn't happen"
+    go [x] = x
+    go ((Loss, res):_) = (Loss, res)
+    go (x:xs) = min x $ go xs
 
-maximumEnd :: [GameEnd] -> GameEnd
-maximumEnd [] = Loss
-maximumEnd (Win:_) = Win
-maximumEnd (x:xs) = max x $ maximumEnd xs
+maximumEnd :: Ord a => (a -> GameEnd) -> [a] -> a
+maximumEnd f = snd . go . map (f &&& id)
+  where
+    go [] = error "shouldn't happen"
+    go [x] = x
+    go ((Win, res):_) = (Win, res)
+    go (x:xs) = max x $ go xs
 
 iterateRose :: (a -> [a]) -> a -> Rose a
 iterateRose f x = Node x $ map (iterateRose f) $ f x
@@ -173,7 +180,7 @@ data GameState = GameState
   { currPlayer :: Spot
   , currBoard :: Board Spot
   }
-  deriving Show
+  deriving (Show, Eq, Ord)
 
 start :: GameState
 start = GameState
@@ -181,9 +188,9 @@ start = GameState
   , currBoard = Board $ Vec.replicate 3 $ Vec.replicate 3 Nothing
   }
 
-play :: Spot -> GameState -> GameEnd
-play me startState = extremise $ fmap (evalOnce me) $ allGames startState
+play :: Spot -> GameState -> (GameEnd, GameState)
+play me startState = extremiseOn fst $ fmap (evalOnce me &&& id) $ allGames startState
   where
-    extremise = case me of
-      X -> maximise
-      O -> minimise
+    extremiseOn = case me of
+      X -> maximiseOn
+      O -> minimiseOn

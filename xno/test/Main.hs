@@ -130,9 +130,9 @@ fromStartSpec = describe "a game from the start" do
               ]
           }
     it "should win if it plays as X" $
-      play X initial `shouldBe` Win
+      fst (play X initial) `shouldBe` Win
     it "should lose if it plays as O" $
-      play O initial `shouldBe` Loss
+      fst (play O initial) `shouldBe` Loss
   describe "on a 3x3" do
     let initial = GameState
           { currPlayer = X
@@ -143,6 +143,6 @@ fromStartSpec = describe "a game from the start" do
               ]
           }
     it "should draw if it plays as X" $
-      play X initial `shouldBe` Drawn
+      fst (play X initial) `shouldBe` Drawn
     it "should draw if it plays as O" $
-      play O initial `shouldBe` Drawn
+      fst (play O initial) `shouldBe` Drawn
