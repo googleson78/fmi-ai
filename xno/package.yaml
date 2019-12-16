@@ -7,6 +7,10 @@ dependencies:
 library:
   source-dirs: src
 
+ghc-options:
+- -Wall
+- -Werror
+
 executables:
   xno-exe:
     main:                Main.hs
