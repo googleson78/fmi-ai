@@ -12,7 +12,6 @@
 
 module Xno where
 
-import Control.Arrow ((&&&))
 import Data.Traversable (for)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector.Mutable as Mut (write, modify)
@@ -109,62 +108,62 @@ evalOnce me GameState{..} = case winner currBoard of
 data Rose a = Node a [Rose a]
   deriving stock (Show, Functor)
 
-maximiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
-maximiseOn f = snd . maximumEnd f . evalMinimum f
+maximiseOn :: Rose GameEnd -> GameEnd
+maximiseOn = maximumEnd . evalMinimum
 
-evalMinimum :: Ord a => (a -> GameEnd) -> Rose a -> [a]
-evalMinimum _ (Node x []) = [x]
-evalMinimum f (Node _ xs) = minOmit1 f $ map (evalMaximum f) xs
+evalMinimum :: Rose GameEnd -> [GameEnd]
+evalMinimum (Node x []) = [x]
+evalMinimum (Node _ xs) = minOmit1 $ map evalMaximum xs
 
-evalMaximum :: Ord a => (a -> GameEnd) -> Rose a -> [a]
-evalMaximum _ (Node x []) = [x]
-evalMaximum f (Node _ xs) = maxOmit1 f $ map (evalMinimum f) xs
+evalMaximum :: Rose GameEnd -> [GameEnd]
+evalMaximum (Node x []) = [x]
+evalMaximum (Node _ xs) = maxOmit1 $ map evalMinimum xs
 
-minOmit1 :: forall a. Ord a => (a -> GameEnd) -> [[a]] -> [a]
-minOmit1 _ [] = error "shouldn't happen"
-minOmit1 f (ys:yss) =
-  let (base, move) = minimumEnd f ys
-   in move : minOmit base yss
+minOmit1 :: [[GameEnd]] -> [GameEnd]
+minOmit1 [] = error "shouldn't happen"
+minOmit1 (ys:yss) =
+  let base = minimumEnd ys
+   in base : minOmit base yss
   where
-    minOmit :: GameEnd -> [[a]] -> [a]
+    minOmit :: GameEnd -> [[GameEnd]] -> [GameEnd]
     minOmit _ [] = []
     minOmit curr (xs:xss) =
-      if any ((<= curr) . f) xs
+      if any (<= curr) xs
       then minOmit curr xss
       else
-        let (newCurr, move) = minimumEnd f xs
-         in move : minOmit newCurr xss
+        let newCurr = minimumEnd xs
+         in newCurr : minOmit newCurr xss
 
-maxOmit1 :: forall a. Ord a => (a -> GameEnd) -> [[a]] -> [a]
-maxOmit1 _ [] = error "shouldn't happen"
-maxOmit1 f (ys:yss) =
-  let (base, move) = maximumEnd f ys
-   in move : maxOmit base yss
+maxOmit1 :: [[GameEnd]] -> [GameEnd]
+maxOmit1 [] = error "shouldn't happen"
+maxOmit1 (ys:yss) =
+  let base = maximumEnd ys
+   in base : maxOmit base yss
   where
-    maxOmit :: GameEnd -> [[a]] -> [a]
+    maxOmit :: GameEnd -> [[GameEnd]] -> [GameEnd]
     maxOmit _ [] = []
     maxOmit curr (xs:xss) =
-      if any ((curr <=) . f) xs
+      if any (curr <=) xs
       then maxOmit curr xss
       else
-        let (newCurr, move) = maximumEnd f xs
-         in move : maxOmit newCurr xss
+        let newCurr = maximumEnd xs
+         in newCurr : maxOmit newCurr xss
 
 -- Implement these manually to be as lazy as possible
-minimumEnd :: Ord a => (a -> GameEnd) -> [a] -> (GameEnd, a)
-minimumEnd f = go . map (f &&& id)
+minimumEnd :: [GameEnd] -> GameEnd
+minimumEnd = go
   where
     go [] = error "shouldn't happen"
     go [x] = x
-    go ((Loss, res):_) = (Loss, res)
+    go (Loss:_) = Loss
     go (x:xs) = min x $ go xs
 
-maximumEnd :: Ord a => (a -> GameEnd) -> [a] -> (GameEnd, a)
-maximumEnd f = go . map (f &&& id)
+maximumEnd :: [GameEnd] -> GameEnd
+maximumEnd = go
   where
     go [] = error "shouldn't happen"
     go [x] = x
-    go ((Win, res):_) = (Win, res)
+    go (Win:_) = Win
     go (x:xs) = max x $ go xs
 
 iterateRose :: (a -> [a]) -> a -> Rose a
@@ -183,5 +182,5 @@ data GameState = GameState
   }
   deriving (Show, Eq, Ord)
 
-play :: Spot -> GameState -> (GameEnd, GameState)
-play me startState = maximiseOn fst $ fmap (evalOnce me &&& id) $ allGames startState
+play :: Spot -> GameState -> GameEnd
+play me startState = maximiseOn $ fmap (evalOnce me) $ allGames startState
