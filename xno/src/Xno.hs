@@ -182,12 +182,6 @@ data GameState = GameState
   }
   deriving (Show, Eq, Ord)
 
-start :: GameState
-start = GameState
-  { currPlayer = X
-  , currBoard = Board $ Vec.replicate 3 $ Vec.replicate 3 Nothing
-  }
-
 play :: Spot -> GameState -> (GameEnd, GameState)
 play me startState = extremiseOn fst $ fmap (evalOnce me &&& id) $ allGames startState
   where
