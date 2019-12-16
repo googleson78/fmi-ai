@@ -140,17 +140,17 @@ flipGameEnd = \case
   Drawn -> Drawn
   Win -> Loss
 
-maximumTree' :: Rose GameEnd -> GameEnd
-maximumTree' (Node x []) = x
-maximumTree' (Node _ xs) = maximumEnd $ map (flipGameEnd . maximumTree') xs
+maximise' :: Rose GameEnd -> GameEnd
+maximise' (Node x []) = x
+maximise' (Node _ xs) = maximumEnd $ map (flipGameEnd . maximise') xs
 
-maximumTree :: Rose GameEnd -> GameEnd
-maximumTree (Node x []) = x
-maximumTree (Node _ xs) = maximumEnd $ map minimumTree xs
+maximise :: Rose GameEnd -> GameEnd
+maximise (Node x []) = x
+maximise (Node _ xs) = maximumEnd $ map minimise xs
 
-minimumTree :: Rose GameEnd -> GameEnd
-minimumTree (Node x []) = x
-minimumTree (Node _ xs) = minimumEnd $ map maximumTree xs
+minimise :: Rose GameEnd -> GameEnd
+minimise (Node x []) = x
+minimise (Node _ xs) = minimumEnd $ map maximise xs
 
 -- Implement these manually to be as lazy as possible
 minimumEnd :: [GameEnd] -> GameEnd

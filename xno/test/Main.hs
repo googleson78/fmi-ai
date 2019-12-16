@@ -129,7 +129,7 @@ fromStartSpec = describe "a game from the start" do
               , [Nothing, Nothing]
               ]
           }
-    maximumTree (fmap evalOnce $ allGames initial) `shouldBe` Win
+    maximise (fmap evalOnce $ allGames initial) `shouldBe` Win
   it "should draw on a 3x3" do
     let initial = GameState
           { currPlayer = X
@@ -139,4 +139,4 @@ fromStartSpec = describe "a game from the start" do
               , [Nothing, Nothing, Nothing]
               ]
           }
-    maximumTree (fmap evalOnce $ allGames initial) `shouldBe` Drawn
+    maximise (fmap evalOnce $ allGames initial) `shouldBe` Drawn
