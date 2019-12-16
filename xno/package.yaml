@@ -10,6 +10,7 @@ library:
 ghc-options:
 - -Wall
 - -Werror
+- -O2
 
 executables:
   xno-exe:
