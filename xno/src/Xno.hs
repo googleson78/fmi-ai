@@ -116,9 +116,9 @@ instance Ord GameEnd where
   Drawn <= _ = True
   Win <= _ = False
 
-evalOnce :: GameState -> GameEnd
-evalOnce GameState{..} = case winner currBoard of
-  Winner x -> if x /= currPlayer then Win else Loss
+evalOnce :: Spot -> GameState -> GameEnd
+evalOnce me GameState{..} = case winner currBoard of
+  Winner x -> if x == me then Win else Loss
   _ -> Drawn
 
 data Rose a = Node a [Rose a]
@@ -184,3 +184,10 @@ start = GameState
   { currPlayer = X
   , currBoard = Board $ Vec.replicate 3 $ Vec.replicate 3 Nothing
   }
+
+play :: Spot -> GameState -> GameEnd
+play me startState = extremise $ fmap (evalOnce me) $ allGames startState
+  where
+    extremise = case me of
+      X -> maximise
+      O -> minimise
