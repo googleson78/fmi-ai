@@ -140,10 +140,6 @@ flipGameEnd = \case
   Drawn -> Drawn
   Win -> Loss
 
-maximise' :: Rose GameEnd -> GameEnd
-maximise' (Node x []) = x
-maximise' (Node _ xs) = maximumEnd $ map (flipGameEnd . maximise') xs
-
 maximise :: Rose GameEnd -> GameEnd
 maximise (Node x []) = x
 maximise (Node _ xs) = maximumEnd $ map minimise xs
