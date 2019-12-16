@@ -9,9 +9,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveFunctor #-}
--- {-# LANGUAGE Strict #-}
---
--- {-# OPTIONS_GHC -funbox-strict-fields #-}
 
 module Xno where
 
@@ -94,19 +91,6 @@ place x (Board vss) (i, j) = Board $
 
 next :: GameState -> [GameState]
 next GameState{..} = map (GameState (opp currPlayer) . place currPlayer currBoard) $ allEmpty currBoard
-
-board0 :: Board Spot
-board0 = Board $ Vec.fromList $ map (Vec.fromList)
-  [ [Nothing, Just O, Just O]
-  , [Nothing, Just O, Nothing]
-  , [Nothing, Just X, Nothing]
-  ]
-
-board1 :: Board Spot
-board1 = Board $ Vec.fromList $ map (Vec.fromList)
-  [ [Just O, Just O]
-  , [Nothing, Just O]
-  ]
 
 data GameEnd = Loss | Drawn | Win
   deriving (Show, Eq)
