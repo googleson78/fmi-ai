@@ -112,13 +112,6 @@ data Rose a = Node a [Rose a]
 instance Foldable Rose where
   foldMap f (Node x xs) = f x <> foldMap (foldMap f) xs
 
-data MinOrMax = Min | Max
-
-flipMM :: MinOrMax -> MinOrMax
-flipMM = \case
-  Min -> Max
-  Max -> Min
-
 flipGameEnd :: GameEnd -> GameEnd
 flipGameEnd = \case
   Loss -> Win
