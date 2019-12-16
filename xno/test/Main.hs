@@ -142,35 +142,102 @@ fromStartSpec = describe "a game from the start" do
     it "should lose if it plays as O" $
       play O initial `shouldBe` Loss
   describe "on a 3x3" do
-    let initial = GameState
-          { currPlayer = X
-          , currBoard = Board
-              [ [Nothing, Nothing, Nothing]
-              , [Nothing, Nothing, Nothing]
-              , [Nothing, Nothing, Nothing]
-              ]
-          }
-    it "should draw if it plays as X" $
-      play X initial `shouldBe` Drawn
-  describe "on a non-empty 3x3" do
-    let initial = GameState
-          { currPlayer = O
-          , currBoard = Board
-              [ [Just X, Nothing, Nothing]
-              , [Nothing, Nothing, Nothing]
-              , [Nothing, Nothing, Nothing]
-              ]
-          }
-    it "should draw if it plays as O" $
-      play O initial `shouldBe` Drawn
-  describe "on a 3x3 from a winning position" do
-    let initial = GameState
-          { currPlayer = X
-          , currBoard = Board
-              [ [Just X, Nothing, Just O]
-              , [Nothing, Just O, Nothing]
-              , [Nothing, Nothing, Just X]
-              ]
-          }
-    it "should win if it plays as X" $
-      play X initial `shouldBe` Win
+    describe "from a blank board" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Nothing, Nothing, Nothing]
+                , [Nothing, Nothing, Nothing]
+                , [Nothing, Nothing, Nothing]
+                ]
+            }
+      it "should draw if it plays as X" $
+        play X initial `shouldBe` Drawn
+    describe "from a position of one placed X" do
+      let initial = GameState
+            { currPlayer = O
+            , currBoard = Board
+                [ [Just X, Nothing, Nothing]
+                , [Nothing, Nothing, Nothing]
+                , [Nothing, Nothing, Nothing]
+                ]
+            }
+      it "should draw if it plays as O" $
+        play O initial `shouldBe` Drawn
+    describe "from an obviously winning position for X" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Just X, Just X, Just O]
+                , [Just X, Just O, Just O]
+                , [Nothing, Just O, Just X]
+                ]
+            }
+      it "should win if it plays as X" $
+        play X initial `shouldBe` Win
+    describe "from an obviously losing position for O" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Just X, Just X, Nothing]
+                , [Just X, Just O, Just O]
+                , [Nothing, Just X, Just X]
+                ]
+            }
+      it "should lose if it plays as O" $
+        play O initial `shouldBe` Loss
+    describe "from a forced winning position for X" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Just X, Just X, Nothing]
+                , [Just X, Just O, Just O]
+                , [Nothing, Nothing, Just X]
+                ]
+            }
+      it "should win if it plays as X" $
+        play X initial `shouldBe` Win
+    describe "from a winning position for X [0]" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Just X, Nothing, Just O]
+                , [Nothing, Just O, Nothing]
+                , [Nothing, Nothing, Just X]
+                ]
+            }
+      it "should win if it plays as X" $
+        play X initial `shouldBe` Win
+    describe "from a winning position for X [1]" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Just X, Nothing, Nothing]
+                , [Nothing, Just O, Nothing]
+                , [Just O, Nothing, Just X]
+                ]
+            }
+      it "should win if it plays as X" $
+        play X initial `shouldBe` Win
+    describe "from a winning position for X" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Just X, Just O, Just X]
+                , [Nothing, Just O, Nothing]
+                , [Just O, Nothing, Just X]
+                ]
+            }
+      it "should win if it plays as X" $
+        play X initial `shouldBe` Win
+    describe "from a losing position for O" do
+      let initial = GameState
+            { currPlayer = X
+            , currBoard = Board
+                [ [Just X, Nothing, Just X]
+                , [Nothing, Just O, Nothing]
+                , [Just O, Nothing, Just X]
+                ]
+            }
+      it "should lose if it plays as O" $
+        play O initial `shouldBe` Loss
