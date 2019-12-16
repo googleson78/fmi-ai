@@ -128,9 +128,6 @@ flipGameEnd = \case
 maximiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
 maximiseOn f = snd . maximumEnd f . minimums f
 
-minimiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
-minimiseOn f = snd . minimumEnd f . maximums f
-
 minimums :: Ord a => (a -> GameEnd) -> Rose a -> [a]
 minimums _ (Node x []) = [x]
 minimums f (Node _ xs) = minOmit1 f $ map (maximums f) xs
