@@ -118,7 +118,7 @@ instance Ord GameEnd where
 
 evalOnce :: GameState -> GameEnd
 evalOnce GameState{..} = case winner currBoard of
-  Winner x -> if x == currPlayer then Win else Loss
+  Winner x -> if x /= currPlayer then Win else Loss
   _ -> Drawn
 
 data Rose a = Node a [Rose a]
