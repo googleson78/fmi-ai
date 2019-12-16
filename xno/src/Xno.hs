@@ -126,18 +126,18 @@ flipGameEnd = \case
   Win -> Loss
 
 maximiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
-maximiseOn f = snd . maximumEnd f . maximiseOn' f
+maximiseOn f = snd . maximumEnd f . minimums f
 
 minimiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
-minimiseOn f = snd . minimumEnd f . minimiseOn' f
+minimiseOn f = snd . minimumEnd f . maximums f
 
-maximiseOn' :: Ord a => (a -> GameEnd) -> Rose a -> [a]
-maximiseOn' _ (Node x []) = [x]
-maximiseOn' f (Node _ xs) = minOmit1 f $ map (minimiseOn' f) xs
+minimums :: Ord a => (a -> GameEnd) -> Rose a -> [a]
+minimums _ (Node x []) = [x]
+minimums f (Node _ xs) = minOmit1 f $ map (maximums f) xs
 
-minimiseOn' :: Ord a => (a -> GameEnd) -> Rose a -> [a]
-minimiseOn' _ (Node x []) = [x]
-minimiseOn' f (Node _ xs) = maxOmit1 f $ map (maximiseOn' f) xs
+maximums :: Ord a => (a -> GameEnd) -> Rose a -> [a]
+maximums _ (Node x []) = [x]
+maximums f (Node _ xs) = maxOmit1 f $ map (minimums f) xs
 
 minOmit1 :: Ord a => (a -> GameEnd) -> [[a]] -> [a]
 minOmit1 _ [] = error "shouldn't happen"
