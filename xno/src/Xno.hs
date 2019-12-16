@@ -110,15 +110,15 @@ data Rose a = Node a [Rose a]
   deriving stock (Show, Functor)
 
 maximiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
-maximiseOn f = snd . maximumEnd f . minimums f
+maximiseOn f = snd . maximumEnd f . evalMinimum f
 
-minimums :: Ord a => (a -> GameEnd) -> Rose a -> [a]
-minimums _ (Node x []) = [x]
-minimums f (Node _ xs) = minOmit1 f $ map (maximums f) xs
+evalMinimum :: Ord a => (a -> GameEnd) -> Rose a -> [a]
+evalMinimum _ (Node x []) = [x]
+evalMinimum f (Node _ xs) = minOmit1 f $ map (evalMaximum f) xs
 
-maximums :: Ord a => (a -> GameEnd) -> Rose a -> [a]
-maximums _ (Node x []) = [x]
-maximums f (Node _ xs) = maxOmit1 f $ map (minimums f) xs
+evalMaximum :: Ord a => (a -> GameEnd) -> Rose a -> [a]
+evalMaximum _ (Node x []) = [x]
+evalMaximum f (Node _ xs) = maxOmit1 f $ map (evalMinimum f) xs
 
 minOmit1 :: forall a. Ord a => (a -> GameEnd) -> [[a]] -> [a]
 minOmit1 _ [] = error "shouldn't happen"
