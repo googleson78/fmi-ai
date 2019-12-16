@@ -109,15 +109,6 @@ evalOnce me GameState{..} = case winner currBoard of
 data Rose a = Node a [Rose a]
   deriving stock (Show, Functor)
 
-instance Foldable Rose where
-  foldMap f (Node x xs) = f x <> foldMap (foldMap f) xs
-
-flipGameEnd :: GameEnd -> GameEnd
-flipGameEnd = \case
-  Loss -> Win
-  Drawn -> Drawn
-  Win -> Loss
-
 maximiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
 maximiseOn f = snd . maximumEnd f . minimums f
 
