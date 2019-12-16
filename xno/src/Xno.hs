@@ -139,35 +139,35 @@ maximums :: Ord a => (a -> GameEnd) -> Rose a -> [a]
 maximums _ (Node x []) = [x]
 maximums f (Node _ xs) = maxOmit1 f $ map (minimums f) xs
 
-minOmit1 :: Ord a => (a -> GameEnd) -> [[a]] -> [a]
+minOmit1 :: forall a. Ord a => (a -> GameEnd) -> [[a]] -> [a]
 minOmit1 _ [] = error "shouldn't happen"
-minOmit1 f (xs:xss) = move : minOmit f base xss
+minOmit1 f (ys:yss) =
+  let (base, move) = minimumEnd f ys
+   in move : minOmit base yss
   where
-    (base, move) = minimumEnd f xs
+    minOmit :: GameEnd -> [[a]] -> [a]
+    minOmit _ [] = []
+    minOmit curr (xs:xss) =
+      if any ((<= curr) . f) xs
+      then minOmit curr xss
+      else
+        let (newCurr, move) = minimumEnd f xs
+         in move : minOmit newCurr xss
 
-minOmit :: Ord a => (a -> GameEnd) -> GameEnd -> [[a]] -> [a]
-minOmit _ _ [] = []
-minOmit f curr (xs:xss) =
-  if any ((<= curr) . f) xs
-  then minOmit f curr xss
-  else
-    let (newCurr, move) = minimumEnd f xs
-     in move : minOmit f newCurr xss
-
-maxOmit1 :: Ord a => (a -> GameEnd) -> [[a]] -> [a]
+maxOmit1 :: forall a. Ord a => (a -> GameEnd) -> [[a]] -> [a]
 maxOmit1 _ [] = error "shouldn't happen"
-maxOmit1 f (xs:xss) = move : maxOmit f base xss
+maxOmit1 f (ys:yss) =
+  let (base, move) = maximumEnd f ys
+   in move : maxOmit base yss
   where
-    (base, move) = maximumEnd f xs
-
-maxOmit :: Ord a => (a -> GameEnd) -> GameEnd -> [[a]] -> [a]
-maxOmit _ _ [] = []
-maxOmit f curr (xs:xss) =
-  if any ((curr <=) . f) xs
-  then maxOmit f curr xss
-  else
-    let (newCurr, move) = maximumEnd f xs
-     in move : maxOmit f newCurr xss
+    maxOmit :: GameEnd -> [[a]] -> [a]
+    maxOmit _ [] = []
+    maxOmit curr (xs:xss) =
+      if any ((curr <=) . f) xs
+      then maxOmit curr xss
+      else
+        let (newCurr, move) = maximumEnd f xs
+         in move : maxOmit newCurr xss
 
 -- Implement these manually to be as lazy as possible
 minimumEnd :: Ord a => (a -> GameEnd) -> [a] -> (GameEnd, a)
