@@ -142,24 +142,60 @@ flipGameEnd = \case
   Win -> Loss
 
 maximiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
-maximiseOn _ (Node x []) = x
-maximiseOn f (Node _ xs) = maximumEnd f $ map (minimiseOn f) xs
+maximiseOn f = snd . maximumEnd f . maximiseOn' f
 
 minimiseOn :: Ord a => (a -> GameEnd) -> Rose a -> a
-minimiseOn _ (Node x []) = x
-minimiseOn f (Node _ xs) = minimumEnd f $ map (maximiseOn f) xs
+minimiseOn f = snd . minimumEnd f . minimiseOn' f
+
+maximiseOn' :: Ord a => (a -> GameEnd) -> Rose a -> [a]
+maximiseOn' _ (Node x []) = [x]
+maximiseOn' f (Node _ xs) = minOmit1 f $ map (minimiseOn' f) xs
+
+minimiseOn' :: Ord a => (a -> GameEnd) -> Rose a -> [a]
+minimiseOn' _ (Node x []) = [x]
+minimiseOn' f (Node _ xs) = maxOmit1 f $ map (maximiseOn' f) xs
+
+minOmit1 :: Ord a => (a -> GameEnd) -> [[a]] -> [a]
+minOmit1 _ [] = error "shouldn't happen"
+minOmit1 f (xs:xss) = move : minOmit f base xss
+  where
+    (base, move) = minimumEnd f xs
+
+minOmit :: Ord a => (a -> GameEnd) -> GameEnd -> [[a]] -> [a]
+minOmit _ _ [] = []
+minOmit f curr (xs:xss) =
+  if any ((<= curr) . f) xs
+  then minOmit f curr xss
+  else
+    let (newCurr, move) = minimumEnd f xs
+     in move : minOmit f newCurr xss
+
+maxOmit1 :: Ord a => (a -> GameEnd) -> [[a]] -> [a]
+maxOmit1 _ [] = error "shouldn't happen"
+maxOmit1 f (xs:xss) = move : maxOmit f base xss
+  where
+    (base, move) = maximumEnd f xs
+
+maxOmit :: Ord a => (a -> GameEnd) -> GameEnd -> [[a]] -> [a]
+maxOmit _ _ [] = []
+maxOmit f curr (xs:xss) =
+  if any ((curr <=) . f) xs
+  then maxOmit f curr xss
+  else
+    let (newCurr, move) = maximumEnd f xs
+     in move : maxOmit f newCurr xss
 
 -- Implement these manually to be as lazy as possible
-minimumEnd :: Ord a => (a -> GameEnd) -> [a] -> a
-minimumEnd f = snd . go . map (f &&& id)
+minimumEnd :: Ord a => (a -> GameEnd) -> [a] -> (GameEnd, a)
+minimumEnd f = go . map (f &&& id)
   where
     go [] = error "shouldn't happen"
     go [x] = x
     go ((Loss, res):_) = (Loss, res)
     go (x:xs) = min x $ go xs
 
-maximumEnd :: Ord a => (a -> GameEnd) -> [a] -> a
-maximumEnd f = snd . go . map (f &&& id)
+maximumEnd :: Ord a => (a -> GameEnd) -> [a] -> (GameEnd, a)
+maximumEnd f = go . map (f &&& id)
   where
     go [] = error "shouldn't happen"
     go [x] = x
