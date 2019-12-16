@@ -24,7 +24,7 @@ winnerSpec = describe "detects winners" do
               , [Just X, Just X, Just O]
               ]
           }
-    evalOnce initial `shouldBe` Win
+    evalOnce X initial `shouldBe` Win
 
   it "on rows" do
     let initial0 = GameState
@@ -43,8 +43,8 @@ winnerSpec = describe "detects winners" do
               , [Just X, Just X, Just X]
               ]
           }
-    evalOnce initial0 `shouldBe` Win
-    evalOnce initial1 `shouldBe` Win
+    evalOnce X initial0 `shouldBe` Win
+    evalOnce X initial1 `shouldBe` Win
 
   it "on cols" do
     let initial0 = GameState
@@ -63,8 +63,8 @@ winnerSpec = describe "detects winners" do
               , [Just O, Just X, Just X]
               ]
           }
-    evalOnce initial0 `shouldBe` Win
-    evalOnce initial1 `shouldBe` Win
+    evalOnce X initial0 `shouldBe` Win
+    evalOnce X initial1 `shouldBe` Win
 
 loserSpec :: Spec
 loserSpec = describe "detects losers" do
@@ -77,7 +77,7 @@ loserSpec = describe "detects losers" do
               , [Just O, Just O, Just X]
               ]
           }
-    evalOnce initial `shouldBe` Loss
+    evalOnce X initial `shouldBe` Loss
 
   it "on rows" do
     let initial0 = GameState
@@ -96,8 +96,8 @@ loserSpec = describe "detects losers" do
               , [Just O, Just O, Just O]
               ]
           }
-    evalOnce initial0 `shouldBe` Loss
-    evalOnce initial1 `shouldBe` Loss
+    evalOnce X initial0 `shouldBe` Loss
+    evalOnce X initial1 `shouldBe` Loss
 
   it "on cols" do
     let initial0 = GameState
@@ -116,12 +116,12 @@ loserSpec = describe "detects losers" do
               , [Just X, Just O, Just O]
               ]
           }
-    evalOnce initial0 `shouldBe` Loss
-    evalOnce initial1 `shouldBe` Loss
+    evalOnce X initial0 `shouldBe` Loss
+    evalOnce X initial1 `shouldBe` Loss
 
 fromStartSpec :: Spec
 fromStartSpec = describe "a game from the start" do
-  it "should win on a 2x2" do
+  describe "on a 2x2" do
     let initial = GameState
           { currPlayer = X
           , currBoard = Board
@@ -129,8 +129,11 @@ fromStartSpec = describe "a game from the start" do
               , [Nothing, Nothing]
               ]
           }
-    maximise (fmap evalOnce $ allGames initial) `shouldBe` Win
-  it "should draw on a 3x3" do
+    it "should win if it plays as X" $
+      play X initial `shouldBe` Win
+    it "should lose if it plays as O" $
+      play O initial `shouldBe` Loss
+  describe "on a 3x3" do
     let initial = GameState
           { currPlayer = X
           , currBoard = Board
@@ -139,4 +142,7 @@ fromStartSpec = describe "a game from the start" do
               , [Nothing, Nothing, Nothing]
               ]
           }
-    maximise (fmap evalOnce $ allGames initial) `shouldBe` Drawn
+    it "should draw if it plays as X" $
+      play X initial `shouldBe` Drawn
+    it "should draw if it plays as O" $
+      play O initial `shouldBe` Drawn
