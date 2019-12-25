@@ -120,6 +120,12 @@ evalOnce me board = case winner board of
   Draw -> Drawn
   InProgress -> Drawn -- assume in progress games will end in a draw
 
+-- TODO: better type?
+-- instead of having the possibility of Drawn <non-empty-list>
+-- which we must remember to consider as an "InProgress" game
+-- but actually the problem might be in the original algorithm,
+-- which relies on every state being evaluatable on it's own
+-- so that we can prune it at whatever depth we need
 data Rose a = Node a [Rose a]
   deriving stock (Show, Functor)
 
