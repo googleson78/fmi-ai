@@ -9,10 +9,13 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Xno where
 
 import Data.Traversable (for)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Vector (Vector, (!))
 import qualified Data.Vector.Mutable as Mut (write, modify)
 import qualified Data.Vector as Vec
@@ -31,6 +34,14 @@ opp = \case
 newtype Board a = Board {getBoard :: Vector (Vector (Maybe a))}
   deriving (Functor) via (Vector `Compose` Vector `Compose` Maybe)
   deriving newtype (Eq, Show, Ord)
+
+render :: Show a => Board a -> T.Text
+render Board{..} =
+  T.intercalate "\n" $ Vec.toList $ Vec.map (\vs -> foldMap (T.pack . maybe "_" show) vs) getBoard
+
+pretty :: Show a => Board a -> IO ()
+pretty = T.putStrLn . render
+
 
 data Status a
   = InProgress
@@ -110,10 +121,14 @@ data Rose a = Node a [Rose a]
 
 maximiseOn :: Rose GameEnd -> GameEnd
 maximiseOn = maximumEnd . evalMinimum
+instance Foldable Rose where
+  foldMap f (Node x xs) = f x <> foldMap (foldMap f) xs
 
 evalMinimum :: Rose GameEnd -> [GameEnd]
 evalMinimum (Node x []) = [x]
 evalMinimum (Node _ xs) = minOmit1 $ map evalMaximum xs
+instance Traversable Rose where
+  traverse f (Node x xs) = Node <$> f x <*> traverse (traverse f) xs
 
 evalMaximum :: Rose GameEnd -> [GameEnd]
 evalMaximum (Node x []) = [x]
@@ -181,6 +196,13 @@ data GameState = GameState
   , currBoard :: Board Spot
   }
   deriving (Show, Eq, Ord)
+
+initial' :: Board a
+initial' = Board $ Vec.fromList $ map Vec.fromList
+  [ [Nothing, Nothing, Nothing]
+  , [Nothing, Nothing, Nothing]
+  , [Nothing, Nothing, Nothing]
+  ]
 
 play :: Spot -> GameState -> GameEnd
 play me startState = maximiseOn $ fmap (evalOnce me) $ allGames startState
