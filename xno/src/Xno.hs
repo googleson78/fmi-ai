@@ -123,20 +123,30 @@ evalOnce me board = case winner board of
 data Rose a = Node a [Rose a]
   deriving stock (Show, Functor)
 
-maximiseOn :: Rose GameEnd -> GameEnd
-maximiseOn = maximumEnd . evalMinimum
 instance Foldable Rose where
   foldMap f (Node x xs) = f x <> foldMap (foldMap f) xs
 
-evalMinimum :: Rose GameEnd -> [GameEnd]
-evalMinimum (Node x []) = [x]
-evalMinimum (Node _ xs) = minOmit1 $ map evalMaximum xs
 instance Traversable Rose where
   traverse f (Node x xs) = Node <$> f x <*> traverse (traverse f) xs
 
-evalMaximum :: Rose GameEnd -> [GameEnd]
-evalMaximum (Node x []) = [x]
-evalMaximum (Node _ xs) = maxOmit1 $ map evalMinimum xs
+maximiseOn :: Rose GameEnd -> GameEnd
+maximiseOn = maximumEnd . evalAsMax
+
+ended :: Rose GameEnd -> Maybe GameEnd
+ended (Node Drawn []) = Just Drawn
+ended (Node Drawn _) = Nothing
+ended (Node Win _) = Just Win
+ended (Node Loss _) = Just Loss
+
+evalAsMin :: Rose GameEnd -> [GameEnd]
+evalAsMin t@(Node _ xs)
+  | Just result <- ended t = [result]
+  | otherwise = maxOmit1 $ map evalAsMax xs
+
+evalAsMax :: Rose GameEnd -> [GameEnd]
+evalAsMax t@(Node _ xs)
+  | Just result <- ended t = [result]
+  | otherwise = minOmit1 $ map evalAsMin xs
 
 minOmit1 :: [[GameEnd]] -> [GameEnd]
 minOmit1 [] = error "shouldn't happen"
