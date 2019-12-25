@@ -184,3 +184,6 @@ data GameState = GameState
 
 play :: Spot -> GameState -> GameEnd
 play me startState = maximiseOn $ fmap (evalOnce me) $ allGames startState
+lefts :: Rose a -> Rose a
+lefts (Node x []) = Node x []
+lefts (Node x (y:_)) = Node x [lefts y]
