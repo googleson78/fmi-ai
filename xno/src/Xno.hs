@@ -114,10 +114,11 @@ instance Ord GameEnd where
   Drawn <= _ = True
   Win <= _ = False
 
-evalOnce :: Spot -> GameState -> GameEnd
-evalOnce me GameState{..} = case winner currBoard of
+evalOnce :: Spot -> Board Spot -> GameEnd
+evalOnce me board = case winner board of
   Winner x -> if x == me then Win else Loss
-  _ -> Drawn
+  Draw -> Drawn
+  InProgress -> Drawn -- assume in progress games will end in a draw
 
 data Rose a = Node a [Rose a]
   deriving stock (Show, Functor)
