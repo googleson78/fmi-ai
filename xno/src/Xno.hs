@@ -21,7 +21,7 @@ import qualified Data.Vector.Mutable as Mut (write, modify)
 import qualified Data.Vector as Vec
 import Data.Functor.Compose (Compose(..))
 import Control.Monad (join)
-import Data.Maybe (mapMaybe, listToMaybe)
+import Data.Maybe (mapMaybe, listToMaybe, isNothing)
 
 data Spot = X | O
   deriving (Show, Eq, Ord)
@@ -47,15 +47,18 @@ data Status a
   = InProgress
   | Draw
   | Winner a
+  deriving (Eq, Show)
 
 
-winner :: forall a. (Eq a) => Board a -> Status a
+winner :: (Eq a) => Board a -> Status a
 winner board@(Board vss) =
-  if all (all (not . null)) vss
-  then case winnerEnd board of
-         Nothing -> Draw
-         Just x -> Winner x
-  else InProgress
+  case winnerEnd board of
+    Nothing ->
+      if any (any isNothing) vss
+      then InProgress
+      else Draw
+
+    Just x -> Winner x
 
 -- Assume board is full;
 -- Nothing == Draw

@@ -14,35 +14,67 @@ main = hspec $ describe "xno" do
   loserSpec
 
 winnerSpec :: Spec
-winnerSpec = describe "detects winners" do
-  it "on reverse diagonals" do
-    let initial = GameState
-          { currPlayer = O
-          , currBoard = Board
+winnerSpec = describe "winner" do
+  it "detects X winner on the last column" do
+    let initial = Board
               [ [Just X, Just O, Just X]
-              , [Just O, Just X, Just O]
-              , [Just X, Just X, Just O]
+              , [Nothing, Just O, Just X]
+              , [Just O, Nothing, Just X]
               ]
-          }
-    evalOnce X initial `shouldBe` Win
 
-  it "on rows" do
-    let initial0 = GameState
-          { currPlayer = O
-          , currBoard = Board
-              [ [Just X, Just X, Just X]
+    winner initial `shouldBe` Winner X
+  it "detects O winner on the middle column" do
+    let initial = Board
+              [ [Just X, Just O, Just X]
+              , [Just X, Just O, Nothing]
               , [Just O, Just O, Just X]
-              , [Just X, Just O, Just O]
               ]
-          }
-        initial1 = GameState
-          { currPlayer = O
-          , currBoard = Board
-              [ [Just O, Just O, Just X]
+
+    winner initial `shouldBe` Winner O
+  it "detects draws" do
+    let initial = Board
+              [ [Just X, Just O, Just X]
               , [Just X, Just O, Just O]
-              , [Just X, Just X, Just X]
+              , [Just O, Just X, Just X]
               ]
-          }
+
+    winner initial `shouldBe` Draw
+  it "detects in progress games" do
+    let initial = Board
+              [ [Nothing, Just O, Just X]
+              , [Just X, Just O, Just O]
+              , [Just O, Just X, Just X]
+              ]
+
+    winner initial `shouldBe` InProgress
+  it "detects in progress games" do
+    let initial = Board
+          [ [Just X, Nothing, Just O]
+          , [Nothing, Just O, Nothing]
+          , [Nothing, Nothing, Just X]
+          ]
+    winner initial `shouldBe` InProgress
+  it "detects in progress games" do
+    let initial = Board
+          [ [Just X, Nothing, Just O]
+          , [Nothing, Just O, Nothing]
+          , [Just X, Nothing, Just X]
+          ]
+    winner initial `shouldBe` InProgress
+  it "detects in progress games" do
+    let initial = Board
+          [ [Just X, Nothing, Just O]
+          , [Just O, Just O, Nothing]
+          , [Just X, Nothing, Just X]
+          ]
+    winner initial `shouldBe` InProgress
+  it "detects X winner on the last row" do
+    let initial = Board
+          [ [Just X, Nothing, Just O]
+          , [Just O, Just O, Nothing]
+          , [Just X, Just X, Just X]
+          ]
+    winner initial `shouldBe` Winner X
     evalOnce X initial0 `shouldBe` Win
     evalOnce X initial1 `shouldBe` Win
 
