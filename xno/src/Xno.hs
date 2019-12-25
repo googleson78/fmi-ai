@@ -102,8 +102,8 @@ place :: a -> Board a -> (Int, Int) -> Board a
 place x (Board vss) (i, j) = Board $
   Vec.modify (\vss' -> Mut.modify vss' (\vs -> Vec.modify (\vs' -> Mut.write vs' j $ Just x) vs) i) vss
 
-next :: GameState -> [GameState]
-next GameState{..} = map (GameState (opp currPlayer) . place currPlayer currBoard) $ allEmpty currBoard
+next :: Spot -> Board Spot -> [Board Spot]
+next sign board = map (place sign board) $ allEmpty board
 
 data GameEnd = Loss | Drawn | Win
   deriving (Show, Eq)
@@ -180,21 +180,15 @@ maximumEnd = foldl1 go
     go _ Win = Win
     go acc x = max acc x
 
-iterateRose :: (a -> [a]) -> a -> Rose a
-iterateRose f x = Node x $ map (iterateRose f) $ f x
+genAllRose :: Spot -> Board Spot -> Rose (Board Spot)
+genAllRose sign board = Node board $ map (genAllRose (opp sign)) $ next sign board
 
 cutOff :: Int -> Rose a -> Rose a
 cutOff 0 (Node x _) = Node x []
 cutOff n (Node x xs) = Node x $ map (cutOff (n - 1)) xs
 
-allGames :: GameState -> Rose GameState
-allGames = iterateRose next
-
-data GameState = GameState
-  { currPlayer :: Spot
-  , currBoard :: Board Spot
-  }
-  deriving (Show, Eq, Ord)
+play :: Spot -> Board Spot -> GameEnd
+play me board = maximiseOn $ fmap (evalOnce me) $ genAllRose me board
 
 initial' :: Board a
 initial' = Board $ Vec.fromList $ map Vec.fromList
@@ -203,8 +197,6 @@ initial' = Board $ Vec.fromList $ map Vec.fromList
   , [Nothing, Nothing, Nothing]
   ]
 
-play :: Spot -> GameState -> GameEnd
-play me startState = maximiseOn $ fmap (evalOnce me) $ allGames startState
 lefts :: Rose a -> Rose a
 lefts (Node x []) = Node x []
 lefts (Node x (y:_)) = Node x [lefts y]
