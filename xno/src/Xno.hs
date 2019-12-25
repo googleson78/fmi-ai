@@ -166,20 +166,16 @@ maxOmit1 (ys:yss) =
 
 -- Implement these manually to be as lazy as possible
 minimumEnd :: [GameEnd] -> GameEnd
-minimumEnd = go
+minimumEnd = foldl1 go
   where
-    go [] = error "shouldn't happen"
-    go [x] = x
-    go (Loss:_) = Loss
-    go (x:xs) = min x $ go xs
+    go _ Loss = Loss
+    go acc x = min acc x
 
 maximumEnd :: [GameEnd] -> GameEnd
-maximumEnd = go
+maximumEnd = foldl1 go
   where
-    go [] = error "shouldn't happen"
-    go [x] = x
-    go (Win:_) = Win
-    go (x:xs) = max x $ go xs
+    go _ Win = Win
+    go acc x = max acc x
 
 iterateRose :: (a -> [a]) -> a -> Rose a
 iterateRose f x = Node x $ map (iterateRose f) $ f x
