@@ -35,20 +35,11 @@ newtype Board a = Board {getBoard :: Vector (Vector (Maybe a))}
   deriving (Functor) via (Vector `Compose` Vector `Compose` Maybe)
   deriving newtype (Eq, Show, Ord)
 
-render :: Show a => Board a -> T.Text
-render Board{..} =
-  T.intercalate "\n" $ Vec.toList $ Vec.map (\vs -> foldMap (T.pack . maybe "_" show) vs) getBoard
-
-pretty :: Show a => Board a -> IO ()
-pretty = T.putStrLn . render
-
-
 data Status a
   = InProgress
   | Draw
   | Winner a
   deriving (Eq, Show)
-
 
 winner :: (Eq a) => Board a -> Status a
 winner board@(Board vss) =
@@ -206,6 +197,15 @@ cutOff n (Node x xs) = Node x $ map (cutOff (n - 1)) xs
 
 play :: Spot -> Board Spot -> GameEnd
 play me board = maximiseOn $ fmap (evalOnce me) $ genAllRose me board
+
+---- DEBUGGING STUFF
+
+render :: Show a => Board a -> T.Text
+render Board{..} =
+  T.intercalate "\n" $ Vec.toList $ Vec.map (\vs -> foldMap (T.pack . maybe "_" show) vs) getBoard
+
+pretty :: Show a => Board a -> IO ()
+pretty = T.putStrLn . render
 
 initial' :: Board a
 initial' = Board $ Vec.fromList $ map Vec.fromList
