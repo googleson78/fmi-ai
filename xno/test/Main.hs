@@ -199,14 +199,14 @@ playSpec = describe "play" do
           , [Nothing, Nothing]
           ]
     it "should win if it plays as X" $
-      play X initial `shouldBe` Win
+      snd (play X initial) `shouldBe` Win
   describe "on a non-empty 2x2" do
     let initial = Board
           [ [Just X, Nothing]
           , [Nothing, Nothing]
           ]
     it "should lose if it plays as O" $
-      play O initial `shouldBe` Loss
+      snd (play O initial) `shouldBe` Loss
   describe "on a 3x3" do
     describe "from a blank board" do
       let initial = Board
@@ -215,7 +215,7 @@ playSpec = describe "play" do
             , [Nothing, Nothing, Nothing]
             ]
       it "should draw if it plays as X" $
-        play X initial `shouldBe` Drawn
+        snd (play X initial) `shouldBe` Drawn
     describe "from a position of one placed X" do
       let initial = Board
             [ [Just X, Nothing, Nothing]
@@ -223,7 +223,7 @@ playSpec = describe "play" do
             , [Nothing, Nothing, Nothing]
             ]
       it "should draw if it plays as O" $
-        play O initial `shouldBe` Drawn
+        snd (play O initial) `shouldBe` Drawn
     describe "from an obviously winning position for X" do
       let initial = Board
             [ [Just X, Just X, Just O]
@@ -231,7 +231,7 @@ playSpec = describe "play" do
             , [Nothing, Just O, Just X]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
     describe "from an obviously losing position for O" do
       let initial = Board
             [ [Just X, Just X, Nothing]
@@ -239,7 +239,7 @@ playSpec = describe "play" do
             , [Nothing, Just X, Just X]
             ]
       it "should lose if it plays as O" $
-        play O initial `shouldBe` Loss
+        snd (play O initial) `shouldBe` Loss
     describe "from a forced winning position for X" do
       let initial = Board
             [ [Just X, Just X, Nothing]
@@ -247,7 +247,7 @@ playSpec = describe "play" do
             , [Nothing, Nothing, Just X]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
     describe "from a winning position for X" do
       let initial = Board
             [ [Just X, Nothing, Just O]
@@ -255,7 +255,7 @@ playSpec = describe "play" do
             , [Nothing, Nothing, Just X]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
     describe "from a winning position for X" do
       let initial = Board
             [ [Just X, Nothing, Just O]
@@ -263,7 +263,7 @@ playSpec = describe "play" do
             , [Just X, Nothing, Just X]
             ]
       it "should lose if it plays as O" $
-        play O initial `shouldBe` Loss
+        snd (play O initial) `shouldBe` Loss
     describe "from a winning position for X" do
       let initial = Board
             [ [Just X, Nothing, Just O]
@@ -271,7 +271,7 @@ playSpec = describe "play" do
             , [Just X, Nothing, Just X]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
     describe "from a winning position for X" do
       let initial = Board
             [ [Nothing, Nothing, Just O]
@@ -279,7 +279,7 @@ playSpec = describe "play" do
             , [Just X, Nothing, Just X]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
     describe "from a winning position for X" do
       let initial = Board
             [ [Just X, Nothing, Just X]
@@ -287,7 +287,7 @@ playSpec = describe "play" do
             , [Just O, Nothing, Nothing]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
     describe "from a winning position for X" do
       let initial = Board
             [ [Just X, Nothing, Nothing]
@@ -295,7 +295,7 @@ playSpec = describe "play" do
             , [Just O, Nothing, Just X]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
 
     describe "from a winning position for X" do
       let initial = Board
@@ -304,7 +304,7 @@ playSpec = describe "play" do
             , [Just O, Nothing, Just X]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
 
     describe "from a winning position for X" do
       let initial = Board
@@ -313,7 +313,7 @@ playSpec = describe "play" do
             , [Just X, Nothing, Just O]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
 
     describe "from a draw position for O" do
       let initial = Board
@@ -322,7 +322,7 @@ playSpec = describe "play" do
             , [Just O, Just X, Just X]
             ]
       it "should draw if it plays as O" $
-        play O initial `shouldBe` Drawn
+        snd (play O initial) `shouldBe` Drawn
     describe "from a losing position for O" do
       let initial = Board
             [ [Just X, Nothing, Just X]
@@ -330,7 +330,7 @@ playSpec = describe "play" do
             , [Just O, Nothing, Just X]
             ]
       it "should lose if it plays as O" $
-        play O initial `shouldBe` Loss
+        snd (play O initial) `shouldBe` Loss
     describe "from a losing position for O" do
       let initial = Board
             [ [Nothing, Just X, Just O]
@@ -338,7 +338,7 @@ playSpec = describe "play" do
             , [Just O, Nothing, Nothing]
             ]
       it "should lose if it plays as O" $
-        play O initial `shouldBe` Loss
+        snd (play O initial) `shouldBe` Loss
     describe "from a winning position for X" do
       let initial = Board
             [ [Nothing, Just X, Just O]
@@ -346,7 +346,7 @@ playSpec = describe "play" do
             , [Just O, Nothing, Nothing]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win
     describe "from a winning position for X" do
       let initial = Board
             [ [Nothing, Just X, Just O]
@@ -354,4 +354,4 @@ playSpec = describe "play" do
             , [Just O, Nothing, Nothing]
             ]
       it "should win if it plays as X" $
-        play X initial `shouldBe` Win
+        snd (play X initial) `shouldBe` Win

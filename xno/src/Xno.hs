@@ -13,7 +13,9 @@
 
 module Xno where
 
+import Data.Bifunctor (second)
 import Data.Traversable (for)
+import Control.Arrow ((&&&))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Vector (Vector, (!))
@@ -126,8 +128,40 @@ instance Foldable Rose where
 instance Traversable Rose where
   traverse f (Node x xs) = Node <$> f x <*> traverse (traverse f) xs
 
-maximiseOn :: Rose GameEnd -> GameEnd
-maximiseOn = maximumEnd . evalAsMax
+maximiseWith :: (a -> GameEnd) -> Rose a -> (a, GameEnd)
+maximiseWith eval (Node curr []) = (curr, eval curr)
+maximiseWith eval (Node _ xs)
+  = maximumEndOn snd
+  $ minOmit1WithMemory
+  $ map (second evalAsMin)
+  $ map (getVal &&& fmap eval) xs
+
+minOmit1WithMemory :: [(a, [GameEnd])] -> [(a, GameEnd)]
+minOmit1WithMemory [] = error "shouldn't happen"
+minOmit1WithMemory ((startVal,ys):yss) =
+  let base = (startVal, minimumEnd ys)
+   in base : minOmit' base yss
+  where
+    minOmit' :: (a, GameEnd) -> [(a, [GameEnd])] -> [(a, GameEnd)]
+    minOmit' _ [] = []
+    minOmit' curr@(_, currEnd) ((x, xEnds):xss) =
+      if any (<= currEnd) xEnds
+      then minOmit' curr xss
+      else
+        let newCurr = (x, minimumEnd xEnds)
+         in newCurr : minOmit' newCurr xss
+
+maximumEndOn :: (a -> GameEnd) -> [a] -> a
+maximumEndOn eval = fst . foldl1 go . map (id &&& eval)
+  where
+    go _ x@(_, Win) = x
+    go acc@(_, accResult) x@(_, result) =
+      if accResult <= result
+      then x
+      else acc
+
+getVal :: Rose a -> a
+getVal (Node x _) = x
 
 ended :: Rose GameEnd -> Maybe GameEnd
 ended (Node Drawn []) = Just Drawn
@@ -195,8 +229,8 @@ cutOff :: Int -> Rose a -> Rose a
 cutOff 0 (Node x _) = Node x []
 cutOff n (Node x xs) = Node x $ map (cutOff (n - 1)) xs
 
-play :: Spot -> Board Spot -> GameEnd
-play me board = maximiseOn $ fmap (evalOnce me) $ genAllRose me board
+play :: Spot -> Board Spot -> (Board Spot, GameEnd)
+play me board = maximiseWith (evalOnce me) $ genAllRose me board
 
 ---- DEBUGGING STUFF
 
