@@ -26,7 +26,7 @@ import Control.Monad (join)
 import Data.Maybe (mapMaybe, listToMaybe, isNothing)
 
 data Spot = X | O
-  deriving (Show, Eq, Ord)
+  deriving (Show, Read, Eq, Ord)
 
 opp :: Spot -> Spot
 opp = \case
