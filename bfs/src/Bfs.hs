@@ -88,8 +88,7 @@ bfs start = do
   enqueue start
   markVisited start
   whileM do
-    BfsState{queue} <- get
-    case queue of
+    gets queue >>= \case
       Empty -> pure False
       curr :<| rest -> do
         modify' $ set (field @"queue") rest
