@@ -87,7 +87,7 @@ bfs
 bfs start = do
   enqueue start
   markVisited start
-  whileM $ do
+  whileM do
     BfsState{queue} <- get
     case queue of
       Empty -> pure False
@@ -114,7 +114,7 @@ go dir (x, y) = do
         Down -> (x + 1, y)
         Right -> (x, y - 1)
   inBounds newLoc <&> \case
-    True -> Just $ newLoc
+    True -> Just newLoc
     False -> Nothing
 
 spotType
