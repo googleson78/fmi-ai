@@ -1,0 +1,38 @@
+name:                bfs
+
+dependencies:
+- base >= 4.7 && < 5
+- vector
+- mtl
+- unordered-containers
+- containers
+- generic-lens
+- microlens
+- extra
+- hashable
+
+library:
+  source-dirs: src
+
+ghc-options:
+- -Wall
+- -Werror
+- -O2
+
+executables:
+  bfs-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -rtsopts
+    dependencies:
+    - bfs
+
+tests:
+  bfs-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -rtsopts
+    dependencies:
+    - bfs
