@@ -52,9 +52,9 @@ data Spot
 type Location = (Int, Int)
 
 data BfsState = BfsState
-  { visitedNodes :: HashSet Location
-  , queue :: Seq Location
-  , paths :: HashMap Location Location
+  { visitedNodes :: !(HashSet Location)
+  , queue :: !(Seq Location)
+  , paths :: !(HashMap Location Location)
   }
   deriving stock Generic
 
