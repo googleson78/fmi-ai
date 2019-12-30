@@ -96,3 +96,49 @@ main = hspec $ describe "bfs" do
         end = (1, 1)
     findPath board start end `shouldBe`
       Nothing
+
+  it "works on a non-square example" do
+    let board = Board $
+          [ [Normal, Normal, Normal]
+          , [Normal, Normal, Normal]
+          ]
+        start = (0, 1)
+        end = (1, 1)
+    findPath board start end `shouldBe`
+      Just [(0, 1), (1, 1)]
+
+  it "works on a larger example" do
+    let board = Board $
+          [ [Normal, Normal, Normal, Normal]
+          , [Normal, Normal, Normal, Normal]
+          , [Normal, Blocked, Normal, Normal]
+          , [Normal, Normal, Normal, Normal]
+          ]
+        start = (3, 1)
+        end = (0, 0)
+    findPath board start end `shouldBe`
+      Just [(3, 1), (3, 0), (2, 0), (1, 0), (0, 0)]
+
+  it "can't find a path when there is none on a larger board" do
+    let board = Board $
+          [ [Normal       , Blocked, Normal, Normal]
+          , [Blocked      , Blocked, Normal, Normal]
+          , [Blocked      , Blocked, Normal, Normal]
+          , [Normal       , Normal , Normal, Normal]
+          ]
+        start = (3, 0)
+        end = (0, 0)
+    findPath board start end `shouldBe`
+      Nothing
+
+  it "works on an example only reachable by portals" do
+    let board = Board $
+          [ [Normal       , Blocked, Normal, Normal       ]
+          , [Portal (3, 3), Blocked, Normal, Normal       ]
+          , [Blocked      , Blocked, Normal, Normal       ]
+          , [Normal       , Normal , Normal, Portal (1, 0)]
+          ]
+        start = (3, 0)
+        end = (0, 0)
+    findPath board start end `shouldBe`
+      Just [(3, 0), (3, 1), (3, 2), (3, 3), (1, 0), (0, 0)]
