@@ -3,6 +3,7 @@ module Main (main) where
 import Bfs (Board(..), findPath)
 import Control.Monad (replicateM)
 import qualified Data.Vector as Vec
+import Data.Foldable (traverse_)
 
 main :: IO ()
 main = do
@@ -13,4 +14,4 @@ main = do
   (start, end) <- readInput
   let board = Board $ Vec.fromList rows
 
-  print $ findPath board start end
+  traverse_ print $ findPath board start end

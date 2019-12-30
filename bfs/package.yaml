@@ -10,6 +10,7 @@ dependencies:
 - microlens
 - extra
 - hashable
+- hspec
 
 library:
   source-dirs: src

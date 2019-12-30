@@ -10,8 +10,9 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
-module Bfs (Board(..), findPath) where
+module Bfs (Board(..), Spot(..), findPath) where
 
 import Prelude hiding (Either(..))
 import Control.Monad.Extra (unlessM, whileM)
@@ -91,6 +92,7 @@ bfs
 bfs start = do
   enqueue start
   markVisited start
+  markParent start start
   whileM do
     gets queue >>= \case
       Empty -> pure False
@@ -136,12 +138,23 @@ inBounds (x, y) = do
 dirs :: [Direction]
 dirs = [Up, Right, Down, Left]
 
-findPath :: Board Spot -> Location -> Location -> [Location]
+findPath :: Board Spot -> Location -> Location -> Maybe [Location]
 findPath board start end =
   let startState = BfsState Set.empty Seq.empty Map.empty
-   in reverse $ getParents end $ paths $ (`execState` startState) $ (`runReaderT` board) $ bfs start
+   in reverse <$> do getParents end $ paths $ (`execState` startState) $ (`runReaderT` board) $ bfs start
 
-getParents :: (Eq a, Hashable a) => a -> HashMap a a -> [a]
-getParents x m = x : case Map.lookup x m of
-  Nothing -> []
-  Just y -> getParents y m
+getParents :: forall a. (Eq a, Hashable a) => a -> HashMap a a -> Maybe [a]
+getParents end m = (end:) . recurParents <$> Map.lookup end m
+  where
+    recurParents :: a -> [a]
+    recurParents x
+      | x == end = []
+      -- ^ edge case which allows for less case analysis in getParents
+      -- occurs when the parent of end is end itself, i.e.
+      -- when the root is end, so we don't need to do anything
+      | otherwise = case Map.lookup x m of
+        Nothing -> error "shouldn't happen"
+        Just y
+          | x == y -> [x]
+          -- ^ we've reached the root
+          | otherwise -> x : recurParents y
