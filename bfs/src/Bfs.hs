@@ -11,7 +11,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Bfs (Board(..), BfsState(..), bfs) where
+module Bfs (Board(..), findPath) where
 
 import Prelude hiding (Either(..))
 import Control.Monad.Extra (unlessM, whileM)
@@ -22,14 +22,18 @@ import Data.Vector (Vector, (!))
 import qualified Data.Vector as Vec
 import Control.Monad.State.Class (MonadState(..), gets, modify')
 import Control.Monad.Reader.Class (MonadReader(..), asks)
+import Control.Monad.Reader (runReaderT)
+import Control.Monad.State.Strict (execState)
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as Set
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Data.Sequence (Seq((:<|), Empty), (|>))
+import qualified Data.Sequence as Seq
 import Data.Generics.Product (field)
 import Lens.Micro (over, set)
 import GHC.Generics (Generic)
+import Data.Hashable (Hashable)
 
 newtype Board a = Board {getBoard :: Vector (Vector a)}
   deriving Functor via (Vector `Compose` Vector)
@@ -131,3 +135,13 @@ inBounds (x, y) = do
 
 dirs :: [Direction]
 dirs = [Up, Right, Down, Left]
+
+findPath :: Board Spot -> Location -> Location -> [Location]
+findPath board start end =
+  let startState = BfsState Set.empty Seq.empty Map.empty
+   in reverse $ getParents end $ paths $ (`execState` startState) $ (`runReaderT` board) $ bfs start
+
+getParents :: (Eq a, Hashable a) => a -> HashMap a a -> [a]
+getParents x m = x : case Map.lookup x m of
+  Nothing -> []
+  Just y -> getParents y m
