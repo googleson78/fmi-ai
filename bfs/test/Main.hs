@@ -86,7 +86,7 @@ main = hspec $ describe "bfs" do
     findPath board start end `shouldBe`
       Nothing
 
-  it "can't find a path to a blocked block" do
+  it "can't find a path to a blocked spot" do
     let board = Board $
           [ [Normal, Normal, Normal]
           , [Normal, Blocked, Normal]
