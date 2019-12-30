@@ -80,13 +80,16 @@ enqueueNeighbours loc = for_ dirs \direction ->
     traverse_ \newLoc -> unlessM (isVisited newLoc) do
       spotType newLoc >>= \case
         Normal -> do
-          enqueue newLoc
           markParent newLoc loc
+
+          enqueue newLoc
         Blocked -> pure ()
         Portal portalLoc -> do
+          markParent newLoc loc
+
           markParent portalLoc newLoc
           enqueue portalLoc
-          markParent newLoc loc
+          markVisited newLoc
 
 bfs
   :: (MonadReader (Board Spot) m, MonadState BfsState m)
