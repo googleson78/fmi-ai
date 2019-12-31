@@ -96,7 +96,7 @@ updateDiagConflicts (x, oldy) newy =
 {-# INLINE updateDiagConflicts #-}
 
 countConflicts :: Conflicts -> Board -> Int
-countConflicts cs = Vec.ifoldl (\acc x y -> acc + cs Map.! (x, y)) 0
+countConflicts cs = Vec.ifoldl' (\acc x y -> acc + cs Map.! (x, y)) 0
 
 randomConflicting
   :: MonadState BoardState m
