@@ -7,7 +7,7 @@
 
 module MinConflicts where
 
-import Control.Monad (when, replicateM)
+import Control.Monad (replicateM)
 import Data.List (sortOn, intercalate)
 import Data.List.Extra (minimumOn, groupOn)
 import Prelude hiding (curry)
@@ -17,7 +17,7 @@ import qualified Data.Vector.Mutable as Mut (write)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Control.Monad.State.Class (MonadState(..), gets, modify')
-import Control.Monad.State.Strict (execState)
+import Control.Monad.State.Strict (runState)
 import System.Random (StdGen, randomR, randomRIO, newStdGen)
 
 
@@ -115,8 +115,8 @@ randomConflicting = do
 
 minimiseConflicts
   :: MonadState BoardState m
-  => m ()
-minimiseConflicts = whileM do
+  => Int -> m Bool
+minimiseConflicts = flip boundedWhileM do
   BoardState {board, conflicts} <- get
 
   (cx, cy) <- randomConflicting
@@ -135,10 +135,16 @@ minimiseConflicts = whileM do
 fromToExcept :: Int -> Int -> Int -> [Int]
 fromToExcept start end except = filter (/=except) [start..end]
 
-whileM :: Monad m => m Bool -> m ()
-whileM act = do
-  x <- act
-  when x $ whileM act
+boundedWhileM :: Monad m => Int -> m Bool -> m Bool
+boundedWhileM maxSteps act = go 0
+  where
+    go i
+      | i == maxSteps = pure False
+      | otherwise = do
+        x <- act
+        if x
+        then go (i + 1)
+        else pure True
 
 fillRandom :: Int -> IO BoardState
 fillRandom n = do
@@ -201,4 +207,8 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
   else "_"
 
 solveFor :: Int -> IO BoardState
-solveFor n = execState minimiseConflicts <$> fillRandom n
+solveFor n = do
+  (success, result) <- runState (minimiseConflicts $ 5 * n) <$> fillRandom n
+  if success
+  then pure result
+  else solveFor n
