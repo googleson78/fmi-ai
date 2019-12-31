@@ -1,0 +1,35 @@
+name:                minconflicts
+
+dependencies:
+- base >= 4.7 && < 5
+- random
+- extra
+- vector
+- mtl
+- unordered-containers
+
+library:
+  source-dirs: src
+
+ghc-options:
+- -Wall
+- -Werror
+- -O2
+
+executables:
+  minconflicts-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -rtsopts
+    dependencies:
+    - minconflicts
+
+tests:
+  minconflicts-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -rtsopts
+    dependencies:
+    - minconflicts
