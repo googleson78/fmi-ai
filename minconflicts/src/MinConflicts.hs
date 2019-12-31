@@ -65,6 +65,7 @@ updateSpots oldloc newloc =
       | currloc == oldloc -> cs + 1
       | currloc == newloc -> cs - 1
       | otherwise -> cs
+{-# INLINE updateSpots #-}
 
 updateStraightConflicts :: Location -> Int -> Conflicts -> Conflicts
 updateStraightConflicts (x, oldy) newy =
