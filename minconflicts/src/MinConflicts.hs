@@ -208,7 +208,7 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
 
 solveFor :: Int -> IO BoardState
 solveFor n = do
-  (success, result) <- runState (minimiseConflicts $ 5 * n) <$> fillRandom n
+  (success, result) <- runState (minimiseConflicts $ 10 * n) <$> fillRandom n
   if success
   then pure result
   else solveFor n
