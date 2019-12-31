@@ -134,6 +134,7 @@ minimiseConflicts = flip boundedWhileM do
 
 fromToExcept :: Int -> Int -> Int -> [Int]
 fromToExcept start end except = filter (/=except) [start..end]
+{-# INLINE fromToExcept #-}
 
 boundedWhileM :: Monad m => Int -> m Bool -> m Bool
 boundedWhileM maxSteps act = go 0
