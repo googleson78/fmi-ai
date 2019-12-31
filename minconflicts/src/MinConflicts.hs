@@ -10,7 +10,7 @@
 module MinConflicts where
 
 import Control.Monad (replicateM)
-import Data.List (sortOn, intercalate)
+import Data.List (sortOn, intercalate, foldl')
 import Data.List.Extra (minimumOn, groupOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
@@ -58,31 +58,24 @@ move (oldx, _) (_, newy) board =
 -- assume we only move around the same row,
 -- so we don't have any conflicts in rows!
 updateConflicts :: Location -> Location -> Conflicts -> Conflicts
-updateConflicts oldloc newloc@(_, newy) conflicts
-  = updateSpots oldloc newloc
-  $ updateStraightConflicts oldloc newy
-  $ updateDiagConflicts oldloc newy
-  $ conflicts
-
-updateSpots :: Location -> Location -> Conflicts -> Conflicts
-updateSpots oldloc newloc =
-  Map.mapWithKey \currloc cs ->
-    if
-      | currloc == oldloc -> cs + 1
-      | currloc == newloc -> cs - 1
-      | otherwise -> cs
-{-# INLINE updateSpots #-}
+updateConflicts oldloc newloc@(_, newy)
+  = Map.adjust (+1) oldloc
+  . Map.adjust (+ (-1)) newloc
+  . updateStraightConflicts oldloc newy
+  . updateDiagConflicts oldloc newy
 
 updateStraightConflicts :: Location -> Int -> Conflicts -> Conflicts
-updateStraightConflicts (x, oldy) newy =
-  Map.mapWithKey \(currx, curry) cs ->
-    if x == currx
-    then cs
-    else
-      if
-        | curry == oldy -> cs - 1
-        | curry == newy -> cs + 1
-        | otherwise -> cs
+updateStraightConflicts (x, oldy) newy cs =
+  let n = length cs - 1
+      genCol y' = [(x', y') | x' <- fromToExcept 0 n x]
+      {-# INLINE genCol #-}
+      oldCol = genCol oldy
+      {-# INLINE oldCol #-}
+      newCol = genCol newy
+      {-# INLINE newCol #-}
+      oldColAdjusted = foldl' (flip $ Map.adjust (+ (-1))) cs oldCol
+      {-# INLINE oldColAdjusted #-}
+   in foldl' (flip $ Map.adjust (+1)) oldColAdjusted newCol
 {-# INLINE updateStraightConflicts #-}
 
 diag :: Location -> Location -> Bool
@@ -91,14 +84,41 @@ diag (x, y) (x', y')
  && (abs (x - x') == abs (y - y'))
 {-# INLINE diag #-}
 
+revDiag :: (Int, Int) -> Int -> [(Int, Int)]
+revDiag (x', y') n = [(z, m - z) | m <- [x' + y'], z <- [0..m], z <= n, m - z <= n, z /= x']
+{-# INLINE revDiag #-}
+
+mainDiag :: (Int, Int) -> Int -> [(Int, Int)]
+mainDiag (x', y') n =
+  let d = abs (x' - y')
+   in case compare x' y' of
+        EQ -> [(i, i) | i <- [0..n], i /= x']
+        LT -> [(i, i + d) | i <- [0..n - d], i /= x']
+        GT -> [(i + d, i) | i <- [0..n - d], i /= y']
+{-# INLINE mainDiag #-}
+
 updateDiagConflicts :: Location -> Int -> Conflicts -> Conflicts
-updateDiagConflicts (x, oldy) newy =
-  Map.mapWithKey \(currx, curry) cs ->
-    if
-      | diag (x, oldy) (currx, curry) && diag (x, newy) (currx, curry) -> cs
-      | diag (x, oldy) (currx, curry) -> cs - 1
-      | diag (x, newy) (currx, curry) -> cs + 1
-      | otherwise -> cs
+updateDiagConflicts (x, oldy) newy cs =
+  let n = length cs - 1
+
+      oldRevDiag = revDiag (x, oldy) n
+      {-# INLINE oldRevDiag #-}
+      newRevDiag = revDiag (x, newy) n
+      {-# INLINE newRevDiag #-}
+
+      oldMainDiag = mainDiag (x, oldy) n
+      {-# INLINE oldMainDiag #-}
+      newMainDiag = mainDiag (x, newy) n
+      {-# INLINE newMainDiag #-}
+
+      oldDiag = oldRevDiag ++ oldMainDiag
+      {-# INLINE oldDiag #-}
+      newDiag = newRevDiag ++ newMainDiag
+      {-# INLINE newDiag #-}
+
+      oldDiagAdjusted = foldl' (flip $ Map.adjust (+ (-1))) cs oldDiag
+      {-# INLINE oldDiagAdjusted #-}
+   in foldl' (flip $ Map.adjust (+1)) oldDiagAdjusted newDiag
 {-# INLINE updateDiagConflicts #-}
 
 countConflicts :: Conflicts -> Board -> Int
