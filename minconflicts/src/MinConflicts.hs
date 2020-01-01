@@ -6,11 +6,13 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module MinConflicts where
 
+import Data.Bifunctor (second)
 import Control.Monad (replicateM)
-import Data.List (sortOn, intercalate)
+import Data.List (sortOn, intercalate, foldl')
 import Data.List.Extra (minimumOn, groupOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
@@ -64,14 +66,20 @@ updateConflicts n oldloc newloc@(_, newy) =
 
 updateStraightConflicts :: Int -> Location -> Int -> [([Location], Int -> Int)]
 updateStraightConflicts n (x, oldy) newy =
-  let genCol y' = [(x', y') | x' <- fromToExcept 0 n x]
-      {-# INLINE genCol #-}
-      oldCol = genCol oldy
+  let oldCol = genCol x n oldy
       {-# INLINE oldCol #-}
-      newCol = genCol newy
+      newCol = genCol x n newy
       {-# INLINE newCol #-}
    in [(newCol, (+1)), (oldCol, (+ (-1)))]
 {-# INLINE updateStraightConflicts #-}
+
+genRow :: Int -> Int -> a -> [(a, Int)]
+genRow col n x = map (x,) $ fromToExcept 0 n col
+{-# INLINE genRow #-}
+
+genCol :: Int -> Int -> a -> [(Int, a)]
+genCol row n y = map (,y) $ fromToExcept 0 n row
+{-# INLINE genCol #-}
 
 diag :: Location -> Location -> Bool
 diag (x, y) (x', y')
@@ -166,38 +174,22 @@ fillRandom n = do
   gen <- newStdGen
   let board = Vec.fromList randomPlaces
       emptyConflicts = Map.mkTupMap n n 0
-      conflicts = Vec.ifoldl' (\acc x y -> placeConflicts acc (x, y)) emptyConflicts board
+      conflicts
+        = foldl' (flip Map.adjustBulk) emptyConflicts
+        $ map (map $ second (+))
+        $ map (placeConflicts (n - 1))
+        $ Vec.toList $ Vec.indexed board
 
   pure $ BoardState{..}
 
-placeConflicts :: Conflicts -> Location -> Conflicts
-placeConflicts cs loc
-  = placeStraightConflicts loc
-  $ placeDiagConflicts loc
-  $ cs
+placeConflicts :: Int -> Location -> [([Location], Int)]
+placeConflicts n loc = placeStraightConflicts n loc ++ placeDiagConflicts n loc
 
-placeStraightConflicts :: Location -> Conflicts -> Conflicts
-placeStraightConflicts (x, y) cs =
-  flip Map.mapWithKey cs \(currx, curry) c ->
-    if currx == x
-    then
-      if curry == y
-      then c
-      else c + 1
-    else
-      if curry == y
-      then c + 1
-      else c
+placeStraightConflicts :: Int -> Location -> [([Location], Int)]
+placeStraightConflicts n (x, y) = [(genRow y n x, 1), (genCol x n y, 1)]
 
-placeDiagConflicts :: Location -> Conflicts -> Conflicts
-placeDiagConflicts loc cs =
-  flip Map.mapWithKey cs \currloc c ->
-  if currloc == loc
-  then c
-  else
-    if diag currloc loc
-    then c + 1
-    else c
+placeDiagConflicts :: Int -> Location -> [([Location], Int)]
+placeDiagConflicts n loc = [(mainDiag loc n, 1), (revDiag loc n, 1)]
 
 printAsBoard :: Board -> String
 printAsBoard v = concat $ flip Vec.imap v \_ y -> rowWithMarked (length v - 1) y ++ "\n"
