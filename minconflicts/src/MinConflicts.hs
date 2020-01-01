@@ -146,12 +146,14 @@ minimiseConflicts n = flip boundedWhileM do
   let newy
         = minimumOn (\y' -> conflicts Map.! (cx, y'))
         $ fromToExcept 0 (length board - 1) cy
+      newConflicts = updateConflicts n (cx, cy) (cx, newy) conflicts
+      newBoard = move (cx, cy) (cx, newy) board
   modify' \old ->
     old
-      { conflicts = updateConflicts n (cx, cy) (cx, newy) conflicts
-      , board = move (cx, cy) (cx, newy) board
+      { conflicts = newConflicts
+      , board = newBoard
       }
-  pure $ conflicts Map.! (cx, newy) /= 0
+  pure $ newConflicts Map.! (cx, newy) /= 0
 
 fromToExcept :: Int -> Int -> Int -> [Int]
 fromToExcept start end except = filter (/=except) [start..end]
