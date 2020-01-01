@@ -16,8 +16,8 @@ import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Mutable as Mut (write)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as Map
+import TupMap (TupMap)
+import qualified TupMap as Map
 import Control.Monad.State.Class (MonadState(..), gets, modify')
 import Control.Monad.State.Strict (runState)
 import System.Random (StdGen, randomR, randomRIO, newStdGen)
@@ -25,7 +25,7 @@ import System.Random (StdGen, randomR, randomRIO, newStdGen)
 
 type Board = Vector Int
 type Location = (Int, Int)
-type Conflicts = HashMap Location Int
+type Conflicts = TupMap Int
 
 data BoardState = BoardState
   { board :: !Board
@@ -41,11 +41,9 @@ conflicting
   => m (Vector Location)
 conflicting = gets \BoardState{board, conflicts} ->
   flip Vec.imapMaybe board \x y ->
-    case Map.lookup (x, y) conflicts of
-      Nothing -> error "shouldn't happen"
-      Just n
-        | n == 0 -> Nothing
-        | otherwise -> Just (x, y)
+    if Map.ix (x, y) conflicts == 0
+    then Nothing
+    else Just (x, y)
 
 -- assume we only move things around in the same row!!
 move
@@ -173,7 +171,7 @@ fillRandom n = do
   randomPlaces <- replicateM n $ randomRIO (0, n - 1)
   gen <- newStdGen
   let board = Vec.fromList randomPlaces
-      emptyConflicts = Map.fromList $ flip zip (repeat 0) [(x, y) | x <- [0..n - 1], y <- [0..n - 1]]
+      emptyConflicts = Map.mkTupMap n n 0
       conflicts = Vec.ifoldl' (\acc x y -> placeConflicts acc (x, y)) emptyConflicts board
 
   pure $ BoardState{..}
@@ -230,7 +228,7 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
 
 solveFor :: Int -> IO BoardState
 solveFor n = do
-  (success, result) <- runState (minimiseConflicts n$ 2 * n) <$> fillRandom n
+  (success, result) <- runState (minimiseConflicts (n - 1) $ 2 * n) <$> fillRandom n
   if success
   then pure result
   else solveFor n
