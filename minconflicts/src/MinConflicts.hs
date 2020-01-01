@@ -10,7 +10,7 @@
 module MinConflicts where
 
 import Control.Monad (replicateM)
-import Data.List (sortOn, intercalate, foldl')
+import Data.List (sortOn, intercalate)
 import Data.List.Extra (minimumOn, groupOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
@@ -68,9 +68,8 @@ updateStraightConflicts n (x, oldy) newy cs =
       {-# INLINE oldCol #-}
       newCol = genCol newy
       {-# INLINE newCol #-}
-      oldColAdjusted = foldl' (flip $ Map.adjust (+ (-1))) cs oldCol
-      {-# INLINE oldColAdjusted #-}
-   in foldl' (flip $ Map.adjust (+1)) oldColAdjusted newCol
+   in Map.adjustBulk (+1) newCol $ Map.adjustBulk (+ (-1)) oldCol cs
+
 {-# INLINE updateStraightConflicts #-}
 
 diag :: Location -> Location -> Bool
@@ -109,9 +108,7 @@ updateDiagConflicts n (x, oldy) newy cs =
       newDiag = newRevDiag ++ newMainDiag
       {-# INLINE newDiag #-}
 
-      oldDiagAdjusted = foldl' (flip $ Map.adjust (+ (-1))) cs oldDiag
-      {-# INLINE oldDiagAdjusted #-}
-   in foldl' (flip $ Map.adjust (+1)) oldDiagAdjusted newDiag
+   in Map.adjustBulk (+1) newDiag $ Map.adjustBulk (+ (-1)) oldDiag cs
 {-# INLINE updateDiagConflicts #-}
 
 countConflicts :: Conflicts -> Board -> Int

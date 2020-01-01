@@ -5,12 +5,13 @@
 module TupMap
   ( TupMap
   , mkTupMap
-  , adjust
+  , adjust, adjustBulk
   , ix, (!)
   , mapWithKey
   , toList
   ) where
 
+import Data.Foldable (for_)
 import Data.Bifunctor (first)
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as Vec
@@ -35,6 +36,13 @@ adjust :: Mut.Unbox a => (a -> a) -> (Int, Int) -> TupMap a -> TupMap a
 adjust f tup old@TupMap{getTupMap, sizeY} =
   old {getTupMap = Vec.modify (\mv -> Mut.modify mv f $ translate sizeY tup) getTupMap}
 {-# INLINE adjust #-}
+
+adjustBulk :: Mut.Unbox a => (a -> a) -> [(Int, Int)] -> TupMap a -> TupMap a
+adjustBulk f tups old@TupMap{getTupMap, sizeY} =
+  old {getTupMap = Vec.modify
+        (\mv -> for_ tups $ Mut.modify mv f . translate sizeY)
+        getTupMap}
+{-# INLINE adjustBulk #-}
 
 ix :: Mut.Unbox a => (Int, Int) -> TupMap a -> a
 ix tup TupMap {getTupMap, sizeY} = getTupMap Vec.! (translate sizeY tup)
