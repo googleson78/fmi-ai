@@ -32,8 +32,6 @@ type Conflicts = TupMap Int
 data BoardState = BoardState
   { board :: !Board
   , conflicts :: !Conflicts
-    -- ^ consider using an unboxed vector of triples (x, y, conflicts) instead
-    -- the hashmap isn't useful at all
   , gen :: !StdGen
   }
   deriving Show
