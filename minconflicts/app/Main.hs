@@ -1,7 +1,6 @@
 module Main (main) where
 
-import MinConflicts (solveForRetry, prettyState)
-import Data.Foldable (traverse_)
+import MinConflicts (solveFor, prettyState)
 
 main :: IO ()
-main = traverse_ prettyState =<< solveForRetry 10 =<< readLn
+main = prettyState =<< solveFor =<< readLn
