@@ -47,6 +47,12 @@ conflicting = gets \BoardState{board, conflicts} ->
     then Nothing
     else Just (x, y)
 
+anyConflicting
+  :: MonadState BoardState m
+  => m Bool
+anyConflicting = gets \BoardState{board, conflicts} ->
+  Vec.any ((/= 0) . (conflicts Map.!)) $ Vec.indexed board
+
 -- assume we only move things around in the same row!!
 move
   :: Location -> Location -> Board -> Board
@@ -148,12 +154,14 @@ minimiseConflicts n = flip boundedWhileM do
         $ fromToExcept 0 (length board - 1) cy
       newConflicts = updateConflicts n (cx, cy) (cx, newy) conflicts
       newBoard = move (cx, cy) (cx, newy) board
+
   modify' \old ->
     old
       { conflicts = newConflicts
       , board = newBoard
       }
-  pure $ newConflicts Map.! (cx, newy) /= 0
+
+  anyConflicting
 
 fromToExcept :: Int -> Int -> Int -> [Int]
 fromToExcept start end except = filter (/=except) [start..end]
