@@ -4,6 +4,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module MinConflicts where
 
@@ -211,9 +213,24 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
   then "Q"
   else "_"
 
-solveFor :: Int -> IO BoardState
+retryWithCount :: forall m a. Monad m => Int -> m (Maybe a) -> m (Maybe a)
+retryWithCount n act = go 0
+  where
+    go :: Int -> m (Maybe a)
+    go i
+      | i > n = pure Nothing
+      | otherwise =
+          act >>= \case
+            Nothing -> go (n + 1)
+            Just x -> pure $ Just x
+
+solveFor :: Int -> IO (Maybe BoardState)
 solveFor n = do
-  (success, result) <- runState (minimiseConflicts $ 10 * n) <$> fillRandom n
-  if success
-  then pure result
-  else solveFor n
+  (success, result) <- runState (minimiseConflicts $ 2 * n) <$> fillRandom n
+  pure $
+    if success
+    then Just result
+    else Nothing
+
+solveForRetry :: Int -> Int -> IO (Maybe BoardState)
+solveForRetry retries = retryWithCount retries . solveFor
