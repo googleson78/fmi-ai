@@ -12,7 +12,7 @@ module MinConflicts where
 
 import Data.Bifunctor (second)
 import Control.Monad (replicateM)
-import Data.List (sortOn, intercalate, foldl')
+import Data.List (sortOn, intercalate, foldl', delete)
 import Data.List.Extra (minimumOn, groupOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
@@ -46,6 +46,7 @@ conflicting = gets \BoardState{board, conflicts} ->
     if Map.ix (x, y) conflicts == 0
     then Nothing
     else Just (x, y)
+{-# INLINE conflicting #-}
 
 anyConflicting
   :: MonadState BoardState m
@@ -70,11 +71,13 @@ updateConflicts n oldloc newloc@(_, newy) =
        ++ updateDiagConflicts n oldloc newy
    in Map.adjustBulk updates
 
+-- TODO: why are the diag filters necessary
+-- I thought I removed them in the diag generation..
 updateStraightConflicts :: Int -> Location -> Int -> [([Location], Int -> Int)]
 updateStraightConflicts n (x, oldy) newy =
-  let oldCol = genCol x n oldy
+  let oldCol = filter (\loc -> not $ diag loc (x, newy)) $ genCol x n oldy
       {-# INLINE oldCol #-}
-      newCol = genCol x n newy
+      newCol = filter (\loc -> not $ diag loc (x, oldy)) $ genCol x n newy
       {-# INLINE newCol #-}
    in [(newCol, (+1)), (oldCol, (+ (-1)))]
 {-# INLINE updateStraightConflicts #-}
@@ -97,6 +100,11 @@ revDiag :: (Int, Int) -> Int -> [(Int, Int)]
 revDiag (x', y') n = [(z, m - z) | m <- [x' + y'], z <- [0..m], z <= n, m - z <= n, z /= x']
 {-# INLINE revDiag #-}
 
+revDiag' :: (Int, Int) -> Int -> Int -> [(Int, Int)]
+revDiag' (x', y') n excy = [(z, m - z) | m <- [x' + y'], z <- [0..m], z <= n, m - z <= n, z /= x', (m - z) /= excy]
+{-# INLINE revDiag' #-}
+
+-- TODO: move the i /= * stuff to delete, probably
 mainDiag :: (Int, Int) -> Int -> [(Int, Int)]
 mainDiag (x', y') n =
   let d = abs (x' - y')
@@ -106,16 +114,27 @@ mainDiag (x', y') n =
         GT -> [(i + d, i) | i <- [0..n - d], i /= y']
 {-# INLINE mainDiag #-}
 
+-- TODO: move the excy stuff to delete, probably
+-- excy is used to exclude crossing points with columns
+mainDiag' :: (Int, Int) -> Int -> Int -> [(Int, Int)]
+mainDiag' (x', y') n excy =
+  let d = abs (x' - y')
+   in case compare x' y' of
+        EQ -> [(i, i) | i <- [0..n], i /= x', i /= excy]
+        LT -> [(i, i + d) | i <- [0..n - d], i /= x', (i + d) /= excy]
+        GT -> [(i + d, i) | i <- [0..n - d], i /= y', i /= excy]
+{-# INLINE mainDiag' #-}
+
 updateDiagConflicts :: Int -> Location -> Int -> [([Location], Int -> Int)]
 updateDiagConflicts n (x, oldy) newy =
-  let oldRevDiag = revDiag (x, oldy) n
+  let oldRevDiag = revDiag' (x, oldy) n newy
       {-# INLINE oldRevDiag #-}
-      newRevDiag = revDiag (x, newy) n
+      newRevDiag = revDiag' (x, newy) n oldy
       {-# INLINE newRevDiag #-}
 
-      oldMainDiag = mainDiag (x, oldy) n
+      oldMainDiag = mainDiag' (x, oldy) n newy
       {-# INLINE oldMainDiag #-}
-      newMainDiag = mainDiag (x, newy) n
+      newMainDiag = mainDiag' (x, newy) n oldy
       {-# INLINE newMainDiag #-}
 
       oldDiag = oldRevDiag ++ oldMainDiag
@@ -123,7 +142,23 @@ updateDiagConflicts n (x, oldy) newy =
       newDiag = newRevDiag ++ newMainDiag
       {-# INLINE newDiag #-}
 
-   in [(newDiag, (+1)), (oldDiag, (+ (-1)))]
+      delCrossing xs =
+        let dy = abs $ oldy - newy
+            dist = div dy 2
+            st = min oldy newy
+         in
+          if even dy
+          then delete (x - dist, st + dist) $ delete (x + dist, st + dist) xs
+          else xs
+      {-# INLINE delCrossing #-}
+
+      oldDiag' = delCrossing oldDiag
+      {-# INLINE oldDiag' #-}
+
+      newDiag' = delCrossing newDiag
+      {-# INLINE newDiag' #-}
+
+   in [(newDiag', (+1)), (oldDiag', (+ (-1)))]
 {-# INLINE updateDiagConflicts #-}
 
 randomConflicting
