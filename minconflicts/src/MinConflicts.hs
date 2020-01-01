@@ -112,9 +112,6 @@ updateDiagConflicts n (x, oldy) newy =
    in [(newDiag, (+1)), (oldDiag, (+ (-1)))]
 {-# INLINE updateDiagConflicts #-}
 
-countConflicts :: Conflicts -> Board -> Int
-countConflicts cs = Vec.ifoldl' (\acc x y -> acc + cs Map.! (x, y)) 0
-
 randomConflicting
   :: MonadState BoardState m
   => m Location
@@ -138,16 +135,15 @@ minimiseConflicts n = flip boundedWhileM do
 
   (cx, cy) <- randomConflicting
 
-  let (minConflicts, minBoard)
-        = minimumOn (uncurry countConflicts)
-        $ map (\y' -> (updateConflicts n (cx, cy) (cx, y') conflicts, move (cx, cy) (cx, y') board))
+  let newy
+        = minimumOn (\y' -> conflicts Map.! (cx, y'))
         $ fromToExcept 0 (length board - 1) cy
   modify' \old ->
     old
-      { conflicts = minConflicts
-      , board = minBoard
+      { conflicts = updateConflicts n (cx, cy) (cx, newy) conflicts
+      , board = move (cx, cy) (cx, newy) board
       }
-  pure $ countConflicts minConflicts minBoard /= 0
+  pure $ conflicts Map.! (cx, newy) /= 0
 
 fromToExcept :: Int -> Int -> Int -> [Int]
 fromToExcept start end except = filter (/=except) [start..end]
