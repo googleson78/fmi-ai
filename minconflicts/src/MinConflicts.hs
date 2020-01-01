@@ -32,8 +32,6 @@ data BoardState = BoardState
   , conflicts :: !Conflicts
     -- ^ consider using an unboxed vector of triples (x, y, conflicts) instead
     -- the hashmap isn't useful at all
-    -- (even indexing instead of traversing the entire thing is slow,
-    -- actually slower than just traversing it! probably because of fusion)
   , gen :: !StdGen
   }
   deriving Show
