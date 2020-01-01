@@ -45,8 +45,6 @@ adjustBulk updates old@TupMap{getTupMap, sizeY} =
       $ map (first $ map $ translate sizeY) updates
     {-# INLINE updatedValues #-}
 
-{-# INLINE adjustBulk #-}
-
 ix :: Mut.Unbox a => (Int, Int) -> TupMap a -> a
 ix tup TupMap {getTupMap, sizeY} = getTupMap Vec.! (translate sizeY tup)
 {-# INLINE ix #-}
