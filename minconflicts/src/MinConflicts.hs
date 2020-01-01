@@ -54,22 +54,23 @@ move (oldx, _) (_, newy) board =
 -- assume we only move around the same row,
 -- so we don't have any conflicts in rows!
 updateConflicts :: Int -> Location -> Location -> Conflicts -> Conflicts
-updateConflicts n oldloc newloc@(_, newy)
-  = Map.adjust (+1) oldloc
-  . Map.adjust (+ (-1)) newloc
-  . updateStraightConflicts n oldloc newy
-  . updateDiagConflicts n oldloc newy
+updateConflicts n oldloc newloc@(_, newy) =
+  let updates
+        = [([oldloc], (+1))]
+       ++ [([newloc], (+ (-1)))]
+       ++ updateStraightConflicts n oldloc newy
+       ++ updateDiagConflicts n oldloc newy
+   in Map.adjustBulk updates
 
-updateStraightConflicts :: Int -> Location -> Int -> Conflicts -> Conflicts
-updateStraightConflicts n (x, oldy) newy cs =
+updateStraightConflicts :: Int -> Location -> Int -> [([Location], Int -> Int)]
+updateStraightConflicts n (x, oldy) newy =
   let genCol y' = [(x', y') | x' <- fromToExcept 0 n x]
       {-# INLINE genCol #-}
       oldCol = genCol oldy
       {-# INLINE oldCol #-}
       newCol = genCol newy
       {-# INLINE newCol #-}
-   in Map.adjustBulk (+1) newCol $ Map.adjustBulk (+ (-1)) oldCol cs
-
+   in [(newCol, (+1)), (oldCol, (+ (-1)))]
 {-# INLINE updateStraightConflicts #-}
 
 diag :: Location -> Location -> Bool
@@ -91,8 +92,8 @@ mainDiag (x', y') n =
         GT -> [(i + d, i) | i <- [0..n - d], i /= y']
 {-# INLINE mainDiag #-}
 
-updateDiagConflicts :: Int -> Location -> Int -> Conflicts -> Conflicts
-updateDiagConflicts n (x, oldy) newy cs =
+updateDiagConflicts :: Int -> Location -> Int -> [([Location], Int -> Int)]
+updateDiagConflicts n (x, oldy) newy =
   let oldRevDiag = revDiag (x, oldy) n
       {-# INLINE oldRevDiag #-}
       newRevDiag = revDiag (x, newy) n
@@ -108,7 +109,7 @@ updateDiagConflicts n (x, oldy) newy cs =
       newDiag = newRevDiag ++ newMainDiag
       {-# INLINE newDiag #-}
 
-   in Map.adjustBulk (+1) newDiag $ Map.adjustBulk (+ (-1)) oldDiag cs
+   in [(newDiag, (+1)), (oldDiag, (+ (-1)))]
 {-# INLINE updateDiagConflicts #-}
 
 countConflicts :: Conflicts -> Board -> Int
