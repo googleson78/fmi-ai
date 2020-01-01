@@ -57,17 +57,16 @@ move (oldx, _) (_, newy) board =
 
 -- assume we only move around the same row,
 -- so we don't have any conflicts in rows!
-updateConflicts :: Location -> Location -> Conflicts -> Conflicts
-updateConflicts oldloc newloc@(_, newy)
+updateConflicts :: Int -> Location -> Location -> Conflicts -> Conflicts
+updateConflicts n oldloc newloc@(_, newy)
   = Map.adjust (+1) oldloc
   . Map.adjust (+ (-1)) newloc
-  . updateStraightConflicts oldloc newy
-  . updateDiagConflicts oldloc newy
+  . updateStraightConflicts n oldloc newy
+  . updateDiagConflicts n oldloc newy
 
-updateStraightConflicts :: Location -> Int -> Conflicts -> Conflicts
-updateStraightConflicts (x, oldy) newy cs =
-  let n = length cs - 1
-      genCol y' = [(x', y') | x' <- fromToExcept 0 n x]
+updateStraightConflicts :: Int -> Location -> Int -> Conflicts -> Conflicts
+updateStraightConflicts n (x, oldy) newy cs =
+  let genCol y' = [(x', y') | x' <- fromToExcept 0 n x]
       {-# INLINE genCol #-}
       oldCol = genCol oldy
       {-# INLINE oldCol #-}
@@ -97,11 +96,9 @@ mainDiag (x', y') n =
         GT -> [(i + d, i) | i <- [0..n - d], i /= y']
 {-# INLINE mainDiag #-}
 
-updateDiagConflicts :: Location -> Int -> Conflicts -> Conflicts
-updateDiagConflicts (x, oldy) newy cs =
-  let n = length cs - 1
-
-      oldRevDiag = revDiag (x, oldy) n
+updateDiagConflicts :: Int -> Location -> Int -> Conflicts -> Conflicts
+updateDiagConflicts n (x, oldy) newy cs =
+  let oldRevDiag = revDiag (x, oldy) n
       {-# INLINE oldRevDiag #-}
       newRevDiag = revDiag (x, newy) n
       {-# INLINE newRevDiag #-}
@@ -141,15 +138,15 @@ randomConflicting = do
 
 minimiseConflicts
   :: MonadState BoardState m
-  => Int -> m Bool
-minimiseConflicts = flip boundedWhileM do
+  => Int -> Int -> m Bool
+minimiseConflicts n = flip boundedWhileM do
   BoardState {board, conflicts} <- get
 
   (cx, cy) <- randomConflicting
 
   let (minConflicts, minBoard)
         = minimumOn (uncurry countConflicts)
-        $ map (\y' -> (updateConflicts (cx, cy) (cx, y') conflicts, move (cx, cy) (cx, y') board))
+        $ map (\y' -> (updateConflicts n (cx, cy) (cx, y') conflicts, move (cx, cy) (cx, y') board))
         $ fromToExcept 0 (length board - 1) cy
   modify' \old ->
     old
@@ -246,7 +243,7 @@ retryWithCount n act = go 0
 
 solveFor :: Int -> IO (Maybe BoardState)
 solveFor n = do
-  (success, result) <- runState (minimiseConflicts $ 2 * n) <$> fillRandom n
+  (success, result) <- runState (minimiseConflicts n $ 2 * n) <$> fillRandom n
   pure $
     if success
     then Just result
