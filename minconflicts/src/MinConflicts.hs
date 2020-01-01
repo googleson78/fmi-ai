@@ -10,7 +10,7 @@
 module MinConflicts where
 
 import Control.Monad (replicateM)
-import Data.List (sortOn, intercalate)
+import Data.List (sortOn, intercalate, foldl')
 import Data.List.Extra (minimumOn, groupOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
@@ -57,32 +57,24 @@ move (oldx, _) (_, newy) board =
 
 -- assume we only move around the same row,
 -- so we don't have any conflicts in rows!
-updateConflicts :: Location -> Location -> Conflicts -> Conflicts
-updateConflicts oldloc newloc@(_, newy) conflicts
-  = updateSpots oldloc newloc
-  $ updateStraightConflicts oldloc newy
-  $ updateDiagConflicts oldloc newy
-  $ conflicts
+updateConflicts :: Int -> Location -> Location -> Conflicts -> Conflicts
+updateConflicts n oldloc newloc@(_, newy)
+  = Map.adjust (+1) oldloc
+  . Map.adjust (+ (-1)) newloc
+  . updateStraightConflicts n oldloc newy
+  . updateDiagConflicts n oldloc newy
 
-updateSpots :: Location -> Location -> Conflicts -> Conflicts
-updateSpots oldloc newloc =
-  Map.mapWithKey \currloc cs ->
-    if
-      | currloc == oldloc -> cs + 1
-      | currloc == newloc -> cs - 1
-      | otherwise -> cs
-{-# INLINE updateSpots #-}
-
-updateStraightConflicts :: Location -> Int -> Conflicts -> Conflicts
-updateStraightConflicts (x, oldy) newy =
-  Map.mapWithKey \(currx, curry) cs ->
-    if x == currx
-    then cs
-    else
-      if
-        | curry == oldy -> cs - 1
-        | curry == newy -> cs + 1
-        | otherwise -> cs
+updateStraightConflicts :: Int -> Location -> Int -> Conflicts -> Conflicts
+updateStraightConflicts n (x, oldy) newy cs =
+  let genCol y' = [(x', y') | x' <- fromToExcept 0 n x]
+      {-# INLINE genCol #-}
+      oldCol = genCol oldy
+      {-# INLINE oldCol #-}
+      newCol = genCol newy
+      {-# INLINE newCol #-}
+      oldColAdjusted = foldl' (flip $ Map.adjust (+ (-1))) cs oldCol
+      {-# INLINE oldColAdjusted #-}
+   in foldl' (flip $ Map.adjust (+1)) oldColAdjusted newCol
 {-# INLINE updateStraightConflicts #-}
 
 diag :: Location -> Location -> Bool
@@ -91,14 +83,39 @@ diag (x, y) (x', y')
  && (abs (x - x') == abs (y - y'))
 {-# INLINE diag #-}
 
-updateDiagConflicts :: Location -> Int -> Conflicts -> Conflicts
-updateDiagConflicts (x, oldy) newy =
-  Map.mapWithKey \(currx, curry) cs ->
-    if
-      | diag (x, oldy) (currx, curry) && diag (x, newy) (currx, curry) -> cs
-      | diag (x, oldy) (currx, curry) -> cs - 1
-      | diag (x, newy) (currx, curry) -> cs + 1
-      | otherwise -> cs
+revDiag :: (Int, Int) -> Int -> [(Int, Int)]
+revDiag (x', y') n = [(z, m - z) | m <- [x' + y'], z <- [0..m], z <= n, m - z <= n, z /= x']
+{-# INLINE revDiag #-}
+
+mainDiag :: (Int, Int) -> Int -> [(Int, Int)]
+mainDiag (x', y') n =
+  let d = abs (x' - y')
+   in case compare x' y' of
+        EQ -> [(i, i) | i <- [0..n], i /= x']
+        LT -> [(i, i + d) | i <- [0..n - d], i /= x']
+        GT -> [(i + d, i) | i <- [0..n - d], i /= y']
+{-# INLINE mainDiag #-}
+
+updateDiagConflicts :: Int -> Location -> Int -> Conflicts -> Conflicts
+updateDiagConflicts n (x, oldy) newy cs =
+  let oldRevDiag = revDiag (x, oldy) n
+      {-# INLINE oldRevDiag #-}
+      newRevDiag = revDiag (x, newy) n
+      {-# INLINE newRevDiag #-}
+
+      oldMainDiag = mainDiag (x, oldy) n
+      {-# INLINE oldMainDiag #-}
+      newMainDiag = mainDiag (x, newy) n
+      {-# INLINE newMainDiag #-}
+
+      oldDiag = oldRevDiag ++ oldMainDiag
+      {-# INLINE oldDiag #-}
+      newDiag = newRevDiag ++ newMainDiag
+      {-# INLINE newDiag #-}
+
+      oldDiagAdjusted = foldl' (flip $ Map.adjust (+ (-1))) cs oldDiag
+      {-# INLINE oldDiagAdjusted #-}
+   in foldl' (flip $ Map.adjust (+1)) oldDiagAdjusted newDiag
 {-# INLINE updateDiagConflicts #-}
 
 countConflicts :: Conflicts -> Board -> Int
@@ -121,15 +138,15 @@ randomConflicting = do
 
 minimiseConflicts
   :: MonadState BoardState m
-  => Int -> m Bool
-minimiseConflicts = flip boundedWhileM do
+  => Int -> Int -> m Bool
+minimiseConflicts n = flip boundedWhileM do
   BoardState {board, conflicts} <- get
 
   (cx, cy) <- randomConflicting
 
   let (minConflicts, minBoard)
         = minimumOn (uncurry countConflicts)
-        $ map (\y' -> (updateConflicts (cx, cy) (cx, y') conflicts, move (cx, cy) (cx, y') board))
+        $ map (\y' -> (updateConflicts n (cx, cy) (cx, y') conflicts, move (cx, cy) (cx, y') board))
         $ fromToExcept 0 (length board - 1) cy
   modify' \old ->
     old
@@ -215,7 +232,7 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
 
 solveFor :: Int -> IO BoardState
 solveFor n = do
-  (success, result) <- runState (minimiseConflicts $ 2 * n) <$> fillRandom n
+  (success, result) <- runState (minimiseConflicts n$ 2 * n) <$> fillRandom n
   if success
   then pure result
   else solveFor n
