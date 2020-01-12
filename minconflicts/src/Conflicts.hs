@@ -30,7 +30,7 @@ mkConflicts size = Conflicts
   where
     n = size - 1
     ixs = [0..n]
-    edges 
+    edges
       =  [(x, 0) | x <- ixs]
       ++ [(0, x) | x <- ixs]
       ++ [(n, x) | x <- ixs]
@@ -63,6 +63,7 @@ newtype Vertical = Vertical {getVertical :: (Int, Int)}
 instance Hashable Vertical where
   hashWithSalt _ = error "shouldn't be called"
   hash (Vertical (_, y)) = y
+  {-# INLINE hash #-}
 
 newtype RevDiag = RevDiag {getRevDiag :: (Int, Int)}
   deriving stock Show
@@ -71,6 +72,7 @@ newtype RevDiag = RevDiag {getRevDiag :: (Int, Int)}
 instance Hashable RevDiag where
   hashWithSalt _ = error "shouldn't be called"
   hash (RevDiag (x, y)) = x + y
+  {-# INLINE hash #-}
 
 newtype MainDiag = MainDiag {getMainDiag :: (Int, Int)}
   deriving stock Show
@@ -79,8 +81,10 @@ newtype MainDiag = MainDiag {getMainDiag :: (Int, Int)}
 instance Hashable MainDiag where
   hashWithSalt _ = error "shouldn't be called"
   hash (MainDiag (x, y)) = x - y
+  {-# INLINE hash #-}
 
 newtype EqOnHash a = EqOnHash a
 
 instance Hashable a => Eq (EqOnHash a) where
   EqOnHash x == EqOnHash y = hash x == hash y
+  {-# INLINE (==) #-}
