@@ -12,8 +12,8 @@ module MinConflicts where
 
 import Data.Bifunctor (second)
 import Control.Monad (replicateM)
-import Data.List (sortOn, intercalate, foldl', delete)
-import Data.List.Extra (minimumOn, groupOn)
+import Data.List (intercalate, foldl', delete)
+import Data.List.Extra (minimumOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as Vec
@@ -219,16 +219,10 @@ placeDiagConflicts n loc = [(mainDiag loc n, 1), (revDiag loc n, 1)]
 printAsBoard :: Board -> String
 printAsBoard v = concat $ flip Vec.imap v \_ y -> rowWithMarked (length v - 1) y ++ "\n"
 
-printConflicts :: Conflicts -> String
-printConflicts (Map.toList -> sortOn fst -> groupOn (fst . fst) -> css)
-  = concatMap (\cs -> '\n' : concatMap (show . snd) cs) css
-
 prettyState :: BoardState -> IO ()
-prettyState BoardState{board, conflicts} = do
+prettyState BoardState{board} = do
   putStrLn "Board:"
   putStr $ printAsBoard board
-  putStr "Conflicts:"
-  putStr $ printConflicts conflicts
   putStrLn ""
 
 rowWithMarked :: Int -> Int -> String
