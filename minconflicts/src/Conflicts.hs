@@ -28,7 +28,14 @@ mkConflicts size = Conflicts
   , revDiag = Map.fromList $ map (first RevDiag) allTups
   }
   where
-    allTups = flip zip (repeat 0) [(x, y) | x <- [0..size - 1], y <- [0..size - 1]]
+    n = size - 1
+    ixs = [0..n]
+    edges 
+      =  [(x, 0) | x <- ixs]
+      ++ [(0, x) | x <- ixs]
+      ++ [(n, x) | x <- ixs]
+      ++ [(x, n) | x <- ixs]
+    allTups = flip zip (repeat 0) edges
 
 adjust :: (Int -> Int) -> (Int, Int) -> Conflicts -> Conflicts
 adjust f loc old = Conflicts
