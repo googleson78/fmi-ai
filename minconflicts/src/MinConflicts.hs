@@ -116,12 +116,11 @@ boundedWhileM maxSteps act = go 0
         then go (i + 1)
         else pure True
 
-fillRandom :: Int -> IO BoardState
-fillRandom n = do
+fillRandom :: Conflicts -> Int -> IO BoardState
+fillRandom emptyConflicts n = do
   randomPlaces <- replicateM n $ randomRIO (0, n - 1)
   gen <- newStdGen
   let board = Vec.fromList randomPlaces
-      emptyConflicts = mkConflicts n
       conflicts
         = foldr (adjust succ) emptyConflicts $ Vec.indexed board
 
@@ -144,7 +143,8 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
 
 solveFor :: Int -> IO BoardState
 solveFor n = do
-  (success, result) <- runState (minimiseConflicts $ 2 * n) <$> fillRandom n
+  let empty = mkConflicts n
+  (success, result) <- runState (minimiseConflicts $ 2 * n) <$> fillRandom empty n
   if success
   then pure result
   else solveFor n
