@@ -13,76 +13,53 @@ import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as Vec
 import qualified Data.Vector.Unboxed.Mutable as Mut
 
-import Data.Hashable
-
-newtype VecMap k = VecMap {getVecMap :: Vector Int}
-  deriving Show
-
-adjustVM :: Hashable k => (Int -> Int) -> k -> VecMap k -> VecMap k
-adjustVM f k (VecMap v) = VecMap $ Vec.modify (\v' -> Mut.modify v' f $ hash k) v
-
-ixVM :: Hashable k => k -> VecMap k -> Int
-ixVM k (VecMap v) = v Vec.! hash k
+adjustVM :: (Int -> Int) -> Int -> Vector Int -> Vector Int
+adjustVM f k v = Vec.modify (\v' -> Mut.modify v' f k) v
 
 data Conflicts = Conflicts
-  { vertical :: VecMap Vertical
-  , mainDiag :: VecMap MainDiag
-  , revDiag :: VecMap RevDiag
+  { vertical :: Vector Int
+  , mainDiag :: Vector Int
+  , revDiag :: Vector Int
   , size :: Int
   }
   deriving Show
 
 mkConflicts :: Int -> Conflicts
 mkConflicts n = Conflicts
-  { vertical = VecMap $ Vec.replicate n 0
-  , mainDiag = VecMap $ Vec.replicate ((2*n) - 1) 0
-  , revDiag = VecMap $ Vec.replicate ((2*n) - 1) 0
+  { vertical = Vec.replicate n 0
+  , mainDiag = Vec.replicate ((2*n) - 1) 0
+  , revDiag = Vec.replicate ((2*n) - 1) 0
   , size = n - 1
   }
 
 adjust :: (Int -> Int) -> (Int, Int) -> Conflicts -> Conflicts
 adjust f loc Conflicts{..} = Conflicts
-  { vertical = adjustVM f (Vertical loc) vertical
-  , mainDiag = adjustVM f (MainDiag $ attach size loc) mainDiag
-  , revDiag = adjustVM f (RevDiag loc) revDiag
+  { vertical = adjustVM f (translateVertical loc) vertical
+  , mainDiag = adjustVM f (translateMainDiag size loc) mainDiag
+  , revDiag = adjustVM f (translateRevDiag loc) revDiag
   , size
   }
-
-attach :: a -> (b, c) -> (a, b, c)
-attach n (x, y) = (n, x, y)
 
 isConflicting :: (Int, Int) -> Conflicts -> Bool
 isConflicting tup cs = ix tup cs > 3
 
 ix :: (Int, Int) -> Conflicts -> Int
 ix loc Conflicts{..}
-  = ixVM (Vertical loc) vertical
-  + ixVM (MainDiag $ attach size loc) mainDiag
-  + ixVM (RevDiag loc) revDiag
+  = vertical `Vec.unsafeIndex` translateVertical loc
+  + mainDiag `Vec.unsafeIndex` translateMainDiag size loc
+  + revDiag `Vec.unsafeIndex` translateRevDiag loc
 
 (!) :: Conflicts -> (Int, Int) -> Int
 (!) = flip ix
 
-newtype Vertical = Vertical {getVertical :: (Int, Int)}
-  deriving stock Show
+translateVertical :: (a, b) -> b
+translateVertical (_, y) = y
+{-# INLINE translateVertical #-}
 
-instance Hashable Vertical where
-  hashWithSalt _ = error "shouldn't be called"
-  hash (Vertical (_, y)) = y
-  {-# INLINE hash #-}
+translateRevDiag :: (Int, Int) -> Int
+translateRevDiag (x, y) = x + y
+{-# INLINE translateRevDiag #-}
 
-newtype RevDiag = RevDiag {getRevDiag :: (Int, Int)}
-  deriving stock Show
-
-instance Hashable RevDiag where
-  hashWithSalt _ = error "shouldn't be called"
-  hash (RevDiag (x, y)) = x + y
-  {-# INLINE hash #-}
-
-newtype MainDiag = MainDiag {getMainDiag :: (Int, Int, Int)}
-  deriving stock Show
-
-instance Hashable MainDiag where
-  hashWithSalt _ = error "shouldn't be called"
-  hash (MainDiag (n, x, y)) = n + x - y
-  {-# INLINE hash #-}
+translateMainDiag :: Int -> (Int, Int) -> Int
+translateMainDiag n (x, y) = n + x - y
+{-# INLINE translateMainDiag #-}

@@ -59,8 +59,6 @@ move
 move (oldx, _) (_, newy) board =
   Vec.modify (\mboard -> Mut.write mboard oldx newy) board
 
--- assume we only move around the same row,
--- so we don't have any conflicts in rows!
 updateConflicts :: Location -> Location -> Conflicts -> Conflicts
 updateConflicts oldloc newloc
   = adjust (+ (-1)) oldloc
@@ -146,7 +144,7 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
 solveFor :: Int -> IO BoardState
 solveFor n = do
   let empty = mkConflicts n
-  (success, result) <- runState (minimiseConflicts $ 2 * n) <$> fillRandom empty n
+  (success, result) <- runState (minimiseConflicts $ 3 * n) <$> fillRandom empty n
   if success
   then pure result
   else solveFor n
