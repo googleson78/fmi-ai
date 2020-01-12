@@ -15,9 +15,9 @@ import Data.Hashable
 import Data.Bifunctor (first)
 
 data Conflicts = Conflicts
-  { vertical :: {-# UNPACK #-} !(HashMap Vertical Int)
-  , mainDiag :: {-# UNPACK #-} !(HashMap MainDiag Int)
-  , revDiag :: {-# UNPACK #-} !(HashMap RevDiag Int)
+  { vertical :: !(HashMap Vertical Int)
+  , mainDiag :: !(HashMap MainDiag Int)
+  , revDiag :: !(HashMap RevDiag Int)
   }
   deriving Show
 
