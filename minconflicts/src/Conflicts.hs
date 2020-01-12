@@ -5,7 +5,7 @@
 module Conflicts
   ( Conflicts, mkConflicts
   , adjust
-  , ix, (!)
+  , ix, (!), isConflicting
   ) where
 
 import Data.HashMap.Strict (HashMap)
@@ -36,6 +36,9 @@ adjust f loc old = Conflicts
   , mainDiag = Map.adjust f (MainDiag loc) $ mainDiag old
   , revDiag = Map.adjust f (RevDiag loc) $ revDiag old
   }
+
+isConflicting :: (Int, Int) -> Conflicts -> Bool
+isConflicting tup cs = ix tup cs > 3
 
 ix :: (Int, Int) -> Conflicts -> Int
 ix loc Conflicts{..}
