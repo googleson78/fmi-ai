@@ -2,7 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module HashAbuse
+module Conflicts
   ( Conflicts, mkConflicts
   , adjust
   , ix, (!)
