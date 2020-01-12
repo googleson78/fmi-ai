@@ -15,9 +15,10 @@ module MinConflicts
 
 import Control.Monad (replicateM)
 import Data.List (intercalate)
+import Data.Maybe (mapMaybe)
 import Data.List.Extra (minimumOn)
 import Prelude hiding (curry)
-import Data.Vector (Vector, (!))
+import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Mutable as Mut (write)
 import Conflicts (Conflicts, mkConflicts, isConflicting, adjust, ix)
@@ -38,9 +39,9 @@ data BoardState = BoardState
 
 conflicting
   :: MonadState BoardState m
-  => m (Vector Location)
+  => m [Location]
 conflicting = gets \BoardState{board, conflicts} ->
-  flip Vec.imapMaybe board \x y ->
+  flip mapMaybe (Vec.toList $ Vec.indexed board) \(x, y) ->
     if isConflicting (x, y) conflicts
     then Just (x, y)
     else Nothing
@@ -77,7 +78,7 @@ randomConflicting = do
 
   modify' \old -> old {gen = gen'}
 
-  pure $ conflicts ! ind
+  pure $ conflicts !! ind
 
 minimiseConflicts
   :: MonadState BoardState m
