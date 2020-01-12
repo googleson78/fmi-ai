@@ -6,7 +6,6 @@ dependencies:
 - extra
 - vector
 - mtl
-- unordered-containers
 - hashable
   #- dump-core
 
