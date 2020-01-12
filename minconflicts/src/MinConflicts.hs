@@ -123,7 +123,7 @@ fillRandom emptyConflicts n = do
   gen <- newStdGen
   let board = Vec.fromList randomPlaces
       conflicts
-        = foldr (adjust succ) emptyConflicts $ Vec.indexed board
+        = foldr (adjust succ) emptyConflicts $ zip [0..] randomPlaces
 
   pure $ BoardState{..}
 
