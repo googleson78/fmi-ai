@@ -10,16 +10,14 @@
 
 module MinConflicts where
 
-import Data.Bifunctor (second)
 import Control.Monad (replicateM)
-import Data.List (intercalate, foldl', delete)
+import Data.List (intercalate, delete)
 import Data.List.Extra (minimumOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as Vec
 import qualified Data.Vector.Mutable as Mut (write)
-import TupMap (TupMap)
-import qualified TupMap as Map
+import Conflicts (Conflicts, mkConflicts, isConflicting, adjust, ix)
 import Control.Monad.State.Class (MonadState(..), gets, modify')
 import Control.Monad.State.Strict (runState)
 import System.Random (StdGen, randomR, randomRIO, newStdGen)
@@ -27,7 +25,6 @@ import System.Random (StdGen, randomR, randomRIO, newStdGen)
 
 type Board = Vector Int
 type Location = (Int, Int)
-type Conflicts = TupMap Int
 
 data BoardState = BoardState
   { board :: !Board
@@ -41,15 +38,15 @@ conflicting
   => m (Vector Location)
 conflicting = gets \BoardState{board, conflicts} ->
   flip Vec.imapMaybe board \x y ->
-    if Map.ix (x, y) conflicts == 0
-    then Nothing
-    else Just (x, y)
+    if isConflicting (x, y) conflicts
+    then Just (x, y)
+    else Nothing
 
 anyConflicting
   :: MonadState BoardState m
   => m Bool
 anyConflicting = gets \BoardState{board, conflicts} ->
-  Vec.any ((/= 0) . (conflicts Map.!)) $ Vec.indexed board
+  Vec.any (`isConflicting` conflicts) $ Vec.indexed board
 
 -- assume we only move things around in the same row!!
 move
@@ -59,14 +56,10 @@ move (oldx, _) (_, newy) board =
 
 -- assume we only move around the same row,
 -- so we don't have any conflicts in rows!
-updateConflicts :: Int -> Location -> Location -> Conflicts -> Conflicts
-updateConflicts n oldloc newloc@(_, newy) =
-  let updates
-        = [([oldloc], (+1))]
-       ++ [([newloc], (+ (-1)))]
-       ++ updateStraightConflicts n oldloc newy
-       ++ updateDiagConflicts n oldloc newy
-   in Map.adjustBulk updates
+updateConflicts :: Location -> Location -> Conflicts -> Conflicts
+updateConflicts oldloc newloc
+  = adjust (+ (-1)) oldloc
+  . adjust (+1) newloc
 
 -- TODO: why are the diag filters necessary
 -- I thought I removed them in the diag generation..
@@ -158,16 +151,16 @@ randomConflicting = do
 
 minimiseConflicts
   :: MonadState BoardState m
-  => Int -> Int -> m Bool
-minimiseConflicts n = flip boundedWhileM do
+  => Int -> m Bool
+minimiseConflicts = flip boundedWhileM do
   BoardState {board, conflicts} <- get
 
   (cx, cy) <- randomConflicting
 
   let newy
-        = minimumOn (\y' -> conflicts Map.! (cx, y'))
+        = minimumOn (\y' -> ix (cx, y') conflicts)
         $ fromToExcept 0 (length board - 1) cy
-      newConflicts = updateConflicts n (cx, cy) (cx, newy) conflicts
+      newConflicts = updateConflicts (cx, cy) (cx, newy) conflicts
       newBoard = move (cx, cy) (cx, newy) board
 
   modify' \old ->
@@ -198,12 +191,9 @@ fillRandom n = do
   randomPlaces <- replicateM n $ randomRIO (0, n - 1)
   gen <- newStdGen
   let board = Vec.fromList randomPlaces
-      emptyConflicts = Map.mkTupMap n n 0
+      emptyConflicts = mkConflicts n
       conflicts
-        = foldl' (flip Map.adjustBulk) emptyConflicts
-        $ map (map $ second (+))
-        $ map (placeConflicts (n - 1))
-        $ Vec.toList $ Vec.indexed board
+        = foldr (adjust succ) emptyConflicts $ Vec.indexed board
 
   pure $ BoardState{..}
 
@@ -233,7 +223,7 @@ rowWithMarked len marked = intercalate "|" $ flip map [0..len] \n ->
 
 solveFor :: Int -> IO BoardState
 solveFor n = do
-  (success, result) <- runState (minimiseConflicts (n - 1) $ 2 * n) <$> fillRandom n
+  (success, result) <- runState (minimiseConflicts $ 2 * n) <$> fillRandom n
   if success
   then pure result
   else solveFor n
