@@ -16,6 +16,7 @@ module MinConflicts
 import Control.Monad (replicateM)
 import Data.List (intercalate)
 import Data.Maybe (mapMaybe)
+import Data.List (foldl')
 import Data.List.Extra (minimumOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector)
@@ -123,7 +124,7 @@ fillRandom emptyConflicts n = do
   gen <- newStdGen
   let board = Vec.fromList randomPlaces
       conflicts
-        = foldr (adjust succ) emptyConflicts $ zip [0..] randomPlaces
+        = foldl' (flip $ adjust succ) emptyConflicts $ zip [0..] randomPlaces
 
   pure $ BoardState{..}
 
