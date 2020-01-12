@@ -7,16 +7,15 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE BangPatterns #-}
 
 module MinConflicts
   ( solveFor
   , prettyState
   ) where
 
-import Control.Monad (replicateM)
 import Data.List (intercalate)
 import Data.Maybe (mapMaybe)
-import Data.List (foldl')
 import Data.List.Extra (minimumOn)
 import Prelude hiding (curry)
 import Data.Vector (Vector)
@@ -25,7 +24,7 @@ import qualified Data.Vector.Mutable as Mut (write)
 import Conflicts (Conflicts, mkConflicts, isConflicting, adjust, ix)
 import Control.Monad.State.Class (MonadState(..), gets, modify')
 import Control.Monad.State.Strict (runState)
-import System.Random (StdGen, randomR, randomRIO, newStdGen)
+import System.Random (StdGen, randomR, newStdGen)
 
 
 type Board = Vector Int
@@ -84,22 +83,24 @@ minimiseConflicts
   => Int -> m Bool
 minimiseConflicts = flip boundedWhileM do
   BoardState {board, conflicts} <- get
+  anyConflicting >>= \case
+    True -> do
 
-  (cx, cy) <- randomConflicting
+      (cx, cy) <- randomConflicting
 
-  let newy
-        = minimumOn (\y' -> ix (cx, y') conflicts)
-        $ fromToExcept 0 (length board - 1) cy
-      newConflicts = updateConflicts (cx, cy) (cx, newy) conflicts
-      newBoard = move (cx, cy) (cx, newy) board
+      let newy
+            = minimumOn (\y' -> ix (cx, y') conflicts)
+            $ fromToExcept 0 (length board - 1) cy
+          newConflicts = updateConflicts (cx, cy) (cx, newy) conflicts
+          newBoard = move (cx, cy) (cx, newy) board
 
-  modify' \old ->
-    old
-      { conflicts = newConflicts
-      , board = newBoard
-      }
-
-  anyConflicting
+      modify' \old ->
+        old
+          { conflicts = newConflicts
+          , board = newBoard
+          }
+      pure True
+    False -> pure False
 
 fromToExcept :: Int -> Int -> Int -> [Int]
 fromToExcept start end except = filter (/=except) [start..end]
@@ -118,11 +119,21 @@ boundedWhileM maxSteps act = go 0
 
 fillRandom :: Conflicts -> Int -> IO BoardState
 fillRandom emptyConflicts n = do
-  randomPlaces <- replicateM n $ randomRIO (0, n - 1)
-  gen <- newStdGen
-  let board = Vec.fromList randomPlaces
-      conflicts
-        = foldl' (flip $ adjust succ) emptyConflicts $ zip [0..] randomPlaces
+  startgen <- newStdGen
+
+  let go currb currconf currGen cx
+        | cx == n = (currconf, currb, currGen)
+        | otherwise =
+            let !potential = map (\y' -> (y', ix (cx, y') currconf)) [0..n - 1]
+                (_, !smallest) = minimumOn snd potential
+                !potential' = filter ((==smallest) . snd) potential
+                (!index, !nextGen) = randomR (0, length potential' - 1) currGen
+                (!newy, _) = potential' !! index
+                !nextConflicts = adjust succ (cx, newy) currconf
+                !nextBoard = Vec.modify (\currb' -> Mut.write currb' cx newy) currb
+             in go nextBoard nextConflicts nextGen (cx + 1)
+
+      (!conflicts, !board, !gen) = go (Vec.replicate n 0) emptyConflicts startgen (0 :: Int)
 
   pure $ BoardState{..}
 
